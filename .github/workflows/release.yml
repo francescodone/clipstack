@@ -3,11 +3,15 @@ name: Release
 # Publish a GitHub Release with the macOS app bundles whenever a version tag
 # (e.g. v0.1.0) is pushed. To cut a release:
 #
-#   npm version patch          # bumps package.json + tauri.conf.json + Cargo.toml
-#   git push && git push --tags
+#   ./scripts/bump_version.sh 0.3.0
+#   git commit -am "chore: release v0.3.0" && git push
+#   git tag v0.3.0 && git push origin v0.3.0
 #
-# The build is unsigned, so first launch needs a right-click -> Open to get
-# past Gatekeeper. Add Apple signing/notarization secrets later to remove that.
+# The app bundle is signed with the updater key (minisign), which is what the
+# in-app updater verifies — store the private key as the repository secret
+# TAURI_SIGNING_PRIVATE_KEY (contents of ~/.tauri/clipstack.key). It is NOT
+# Apple Developer ID signing, so first launch still needs the
+# Privacy & Security -> Open Anyway flow (see README troubleshooting).
 
 on:
   push:
@@ -59,6 +63,12 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # minisign private key (contents of ~/.tauri/clipstack.key).
+          # Required because tauri.conf.json sets a updater pubkey +
+          # createUpdaterArtifacts; without it the build fails when signing
+          # the updater tarball.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
           releaseName: "ClipStack v__VERSION__"
