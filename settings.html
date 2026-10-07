@@ -119,6 +119,25 @@
         </div>
       </section>
 
+      <section class="group" aria-labelledby="grp-updates">
+        <h2 id="grp-updates" class="group__title">Updates</h2>
+        <div class="group__box">
+          <div class="field field--info">
+            <div class="field__label">
+              <span id="update-state">Checking for updates…</span>
+            </div>
+            <div class="field__control field__control--buttons">
+              <button id="update-install" type="button" class="btn" hidden>Install &amp; relaunch</button>
+              <button id="update-check" type="button" class="btn btn--quiet">Check now</button>
+            </div>
+          </div>
+          <p class="field__note" id="update-note">
+            ClipStack looks for new versions on GitHub Releases. Updates are verified
+            with a signing key before they are installed.
+          </p>
+        </div>
+      </section>
+
       <footer class="settings__footer">
         <span id="saved" class="settings__saved" aria-live="polite"></span>
         <button id="quit" type="button" class="btn btn--quiet">Quit ClipStack</button>

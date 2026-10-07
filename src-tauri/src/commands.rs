@@ -55,6 +55,17 @@ pub fn get_clip(app: AppHandle, id: i64) -> Result<Option<ClipDetail>, String> {
 /// Paste a stacked entry into the app the user was in, and close the picker.
 #[tauri::command]
 pub fn paste_clip(app: AppHandle, id: i64) -> Result<(), String> {
+    // Fail before hiding the panel: `paste_and_close` hides first, so an error
+    // raised after that point would be emitted to a window nobody can see.
+    #[cfg(target_os = "macos")]
+    if !crate::macos::accessibility::is_trusted() {
+        crate::macos::accessibility::prompt();
+        return Err(
+            "ClipStack needs Accessibility access to paste — grant it in System Settings \
+             (Privacy & Security → Accessibility), or press Cmd+C to copy and paste manually"
+                .to_string(),
+        );
+    }
     picker::paste_and_close(app, id);
     Ok(())
 }

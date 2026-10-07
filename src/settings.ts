@@ -1,3 +1,7 @@
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
+import { getVersion } from "@tauri-apps/api/app";
+
 import { api, formatBytes, formatShortcut, keyEventToAccelerator } from "./lib/ipc";
 import type { Settings } from "./lib/types";
 
@@ -30,6 +34,11 @@ const a11yDot = must<HTMLElement>("a11y-dot");
 const a11yText = must<HTMLElement>("a11y-text");
 const a11yRequest = must<HTMLButtonElement>("a11y-request");
 const a11yOpen = must<HTMLButtonElement>("a11y-open");
+
+const updateState = must<HTMLElement>("update-state");
+const updateNote = must<HTMLElement>("update-note");
+const updateCheck = must<HTMLButtonElement>("update-check");
+const updateInstall = must<HTMLButtonElement>("update-install");
 
 function must<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -357,6 +366,91 @@ function pollAccessibility(): void {
 }
 
 quitButton.addEventListener("click", () => void api.quit());
+
+// ------------------------------------------------------------------ updates
+
+const UPDATE_HINT =
+  "ClipStack looks for new versions on GitHub Releases. Updates are verified " +
+  "with a signing key before they are installed.";
+
+/** The pending update, kept so the install button does not re-check. */
+let pendingUpdate: Awaited<ReturnType<typeof check>> = null;
+let checking = false;
+
+function setUpdateNote(message: string, isError = false): void {
+  updateNote.textContent = message;
+  updateNote.style.color = isError ? "var(--destructive)" : "";
+}
+
+async function checkForUpdates(auto: boolean): Promise<void> {
+  if (checking) return;
+  checking = true;
+  updateCheck.disabled = true;
+  updateState.textContent = "Checking for updates…";
+  try {
+    const update = await check();
+    pendingUpdate = update;
+    if (update) {
+      updateState.textContent = `Update available: v${update.version} (you have v${await getVersion()})`;
+      setUpdateNote(update.body?.trim() || "Open the notes on GitHub Releases for what changed.");
+      updateInstall.hidden = false;
+    } else if (!auto) {
+      updateState.textContent = `You are up to date (v${await getVersion()})`;
+      setUpdateNote(UPDATE_HINT);
+      updateInstall.hidden = true;
+    } else {
+      // Stay quiet on a silent startup check that found nothing.
+      updateState.textContent = `Up to date (v${await getVersion()})`;
+    }
+  } catch (error) {
+    // A dev build has no bundled updater metadata, and a first run has no
+    // network guarantee; neither is worth alarming the user over.
+    updateState.textContent = "Updates are unavailable in this build";
+    setUpdateNote(describe(error));
+    updateInstall.hidden = true;
+  } finally {
+    checking = false;
+    updateCheck.disabled = false;
+  }
+}
+
+updateCheck.addEventListener("click", () => void checkForUpdates(false));
+
+updateInstall.addEventListener("click", () => {
+  const update = pendingUpdate;
+  if (!update) return;
+  updateInstall.disabled = true;
+  updateCheck.disabled = true;
+  let downloaded = 0;
+  let contentLength = 0;
+  void (async () => {
+    try {
+      updateState.textContent = "Downloading update…";
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") {
+          contentLength = event.data.contentLength ?? 0;
+        } else if (event.event === "Progress" && contentLength > 0) {
+          downloaded += event.data.chunkLength;
+          const pct = Math.min(99, Math.round((downloaded / contentLength) * 100));
+          updateState.textContent = `Downloading update… ${pct}%`;
+        } else if (event.event === "Finished") {
+          updateState.textContent = "Installing and relaunching…";
+        }
+      });
+      updateState.textContent = "Relaunching…";
+      await relaunch();
+    } catch (error) {
+      updateState.textContent = "The update could not be installed";
+      setUpdateNote(describe(error), true);
+      updateInstall.disabled = false;
+      updateCheck.disabled = false;
+    }
+  })();
+});
+
+// A silent check shortly after the window opens, so the section is never
+// showing a stale "Checking…" by the time the user scrolls to it.
+window.setTimeout(() => void checkForUpdates(true), 800);
 
 // The poller keeps running while this window is hidden, so refresh on return.
 window.addEventListener("focus", () => {

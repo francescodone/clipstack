@@ -56,6 +56,15 @@ pub fn show(app: &AppHandle) {
     }
 
     let _ = window.show();
+
+    #[cfg(target_os = "macos")]
+    // Must come after show(): activates the accessory app and makes the panel
+    // key, without which the webview never receives any keystroke (Enter in
+    // particular). `set_focus` alone is not enough for an LSUIElement app.
+    if let Err(err) = ns::focus_panel(&window) {
+        eprintln!("[clipstack] could not focus the picker: {err}");
+    }
+    #[cfg(not(target_os = "macos"))]
     let _ = window.set_focus();
 
     OPEN.store(true, Ordering::SeqCst);
@@ -76,8 +85,15 @@ pub fn hide(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(LABEL) {
         let _ = window.hide();
         #[cfg(target_os = "macos")]
-        if let Err(err) = ns::lower(&window) {
-            eprintln!("[clipstack] could not lower the picker: {err}");
+        {
+            if let Err(err) = ns::lower(&window) {
+                eprintln!("[clipstack] could not lower the picker: {err}");
+            }
+            // We activated the app to show the panel; step aside so focus
+            // returns to the app the user was actually working in.
+            if let Err(err) = ns::release_focus(&window) {
+                eprintln!("[clipstack] could not release focus: {err}");
+            }
         }
     }
 }

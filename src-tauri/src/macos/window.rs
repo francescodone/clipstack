@@ -4,8 +4,10 @@
 //! hides itself the moment we lose focus, which is exactly the wrong behaviour
 //! for a popup the user dismisses by clicking away.
 
+use objc2::MainThreadMarker;
 use objc2_app_kit::{
-    NSWindow, NSWindowCollectionBehavior, NSFloatingWindowLevel, NSMainMenuWindowLevel,
+    NSApplication, NSWindow, NSWindowCollectionBehavior, NSFloatingWindowLevel,
+    NSMainMenuWindowLevel,
 };
 use tauri::WebviewWindow;
 
@@ -45,6 +47,55 @@ pub fn configure_panel(window: &WebviewWindow) -> Result<(), String> {
 
 pub fn raise(window: &WebviewWindow) -> Result<(), String> {
     ns_window(window)?.setLevel(LEVEL_VISIBLE);
+    Ok(())
+}
+
+/// Activate the app and make the panel key, so it actually receives keys.
+///
+/// An accessory (menu-bar-only) app is never activated by `show()` or
+/// `set_focus()` alone, and a window that is not key never becomes first
+/// responder — so the webview silently swallows nothing: it never sees a
+/// single keystroke, and Enter in particular looks dead while mouse clicks
+/// keep working (clicks do not require key status). This is the sequence
+/// Spotlight-style panels use.
+pub fn focus_panel(window: &WebviewWindow) -> Result<(), String> {
+    // AppKit activation has to happen on the main thread; the global-shortcut
+    // handler is not guaranteed to run there.
+    let Some(mtm) = MainThreadMarker::new() else {
+        let panel = window.clone();
+        return window
+            .run_on_main_thread(move || {
+                let _ = focus_panel(&panel);
+            })
+            .map_err(|e| e.to_string());
+    };
+
+    let ns = ns_window(window)?;
+    let app = NSApplication::sharedApplication(mtm);
+    #[allow(deprecated)]
+    app.activateIgnoringOtherApps(true);
+    ns.makeKeyAndOrderFront(None);
+    // Covers the case where activation lands a beat late and the window
+    // would otherwise stay ordered out.
+    ns.orderFrontRegardless();
+    Ok(())
+}
+
+/// Resign active status after the panel is hidden.
+///
+/// `focus_panel` made ClipStack the active app; an accessory app with no
+/// visible window must not keep the menu bar and key focus to itself, so we
+/// step aside and let the system hand control back.
+pub fn release_focus(window: &WebviewWindow) -> Result<(), String> {
+    let Some(mtm) = MainThreadMarker::new() else {
+        let panel = window.clone();
+        return window
+            .run_on_main_thread(move || {
+                let _ = release_focus(&panel);
+            })
+            .map_err(|e| e.to_string());
+    };
+    NSApplication::sharedApplication(mtm).deactivate();
     Ok(())
 }
 

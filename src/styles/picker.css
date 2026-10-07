@@ -225,6 +225,8 @@ body {
 }
 
 .row__title {
+  /* block: the ellipsis rules below are ignored on an inline span */
+  display: block;
   font-size: 13px;
   font-weight: 450;
   line-height: 1.35;
@@ -234,6 +236,7 @@ body {
 }
 
 .row__sub {
+  display: block;
   margin-top: 1px;
   font-size: 11px;
   line-height: 1.3;
