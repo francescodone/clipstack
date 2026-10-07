@@ -63,13 +63,77 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Reflect the paused state in the menu label.
-pub fn set_pause_label(_app: &AppHandle, paused: bool) {
+/// Reflect the paused state in the menu label and dim the tray icon to half
+/// opacity while capture is paused, so the state is visible at a glance.
+pub fn set_pause_label(app: &AppHandle, paused: bool) {
     if let Ok(guard) = PAUSE_ITEM.lock() {
         if let Some(item) = guard.as_ref() {
             let _ = item.set_text(if paused { LABEL_RESUME } else { LABEL_PAUSE });
         }
     }
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        let icon = if paused {
+            dimmed_icon()
+        } else {
+            Image::from_bytes(TRAY_PNG).unwrap_or_else(|_| placeholder_icon())
+        };
+        if let Err(err) = tray.set_icon(Some(icon)) {
+            eprintln!("[clipstack] could not update the tray icon: {err}");
+        }
+        // set_icon replaces the NSImage; re-assert the template flag so the
+        // icon keeps following the menu bar appearance in light and dark mode.
+        let _ = tray.set_icon_as_template(true);
+    }
+}
+
+/// The bundled tray PNG with every alpha value halved (0.5 opacity), used
+/// while capture is paused. Computed once and cached.
+fn dimmed_icon() -> Image<'static> {
+    static DIMMED: std::sync::OnceLock<Vec<u8>> = std::sync::OnceLock::new();
+    let bytes = DIMMED.get_or_init(|| {
+        let decoded = match image::load_from_memory(TRAY_PNG) {
+            Ok(img) => img.to_rgba8(),
+            Err(err) => {
+                eprintln!("[clipstack] could not decode the tray icon: {err}");
+                return Vec::new();
+            }
+        };
+        let mut rgba = decoded;
+        for pixel in rgba.pixels_mut() {
+            pixel[3] /= 2;
+        }
+        let mut out = std::io::Cursor::new(Vec::new());
+        if rgba
+            .write_to(&mut out, image::ImageFormat::Png)
+            .is_err()
+        {
+            return Vec::new();
+        }
+        out.into_inner()
+    });
+    if bytes.is_empty() {
+        return placeholder_dimmed();
+    }
+    Image::from_bytes(bytes).unwrap_or_else(|_| placeholder_dimmed())
+}
+
+/// Fallback dimmed icon when the bundled PNG cannot be processed.
+fn placeholder_dimmed() -> Image<'static> {
+    let size = 18u32;
+    let mut rgba = vec![0u8; (size * size * 4) as usize];
+    for y in 0..size {
+        for x in 0..size {
+            let edge = x < 2 || y < 2 || x >= size - 2 || y >= size - 2;
+            let i = ((y * size + x) as usize) * 4;
+            if edge {
+                rgba[i] = 0;
+                rgba[i + 1] = 0;
+                rgba[i + 2] = 0;
+                rgba[i + 3] = 100; // half of the normal placeholder's alpha
+            }
+        }
+    }
+    Image::new_owned(rgba, size, size)
 }
 
 fn toggle_pause(app: AppHandle) {

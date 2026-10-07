@@ -155,14 +155,23 @@ function renderList(): void {
     row.setAttribute("aria-selected", String(index === selected));
     row.dataset.index = String(index);
 
+    // Top line: badge, content preview, meta. The preview is truncated by
+    // CSS for display only — it is never the copy source, which is always
+    // the stored payload fetched by id.
+    const main = el("div", "row__main");
+
     const badge = el("span", `row__badge row__badge--${item.kind}`);
     badge.append((KIND_ICON[item.kind] ?? KIND_ICON.text)());
-    row.append(badge);
+    main.append(badge);
 
     const text = el("span", "row__text");
     text.append(el("span", "row__title", item.preview));
     text.append(el("span", "row__sub", subtitleFor(item)));
-    row.append(text);
+    main.append(text);
+
+    // Bottom line: the copy actions, anchored right and always visible
+    // whatever the length of the content above.
+    const actions = el("div", "row__actions");
 
     // Copy-only action: puts the item on the clipboard without pasting. On a
     // formatted text row this is the rich variant, marked with sparkles.
@@ -178,7 +187,7 @@ function renderList(): void {
       event.stopPropagation();
       void copyToClipboard(index, "rich", copy);
     });
-    row.append(copy);
+    actions.append(copy);
 
     // Second command for text that captured formatting: the same payload
     // stripped to the plain string (drops colour, fonts, inline images). Same
@@ -196,11 +205,10 @@ function renderList(): void {
         event.stopPropagation();
         void copyToClipboard(index, "plain", plain);
       });
-      row.append(plain);
+      actions.append(plain);
     }
 
-    // Age/pin meta last, so the copy actions sit between the text and the
-    // timestamp and the row's right edge stays a stable, static column.
+    // Age/pin meta stays on the top line's right edge, above the actions.
     const meta = el("span", "row__meta");
     if (item.pinned) {
       const pin = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -214,7 +222,10 @@ function renderList(): void {
       meta.append(pin);
     }
     meta.append(el("span", undefined, formatAgo(item.createdAt)));
-    row.append(meta);
+    main.append(meta);
+
+    row.append(main);
+    row.append(actions);
 
     resultsEl.append(row);
   });

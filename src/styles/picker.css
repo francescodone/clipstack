@@ -177,11 +177,18 @@ body {
 
 .row {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
+  flex-direction: column;
+  gap: 3px;
   padding: 7px 8px;
   border-radius: var(--radius-row);
   transition: background-color 90ms ease;
+}
+
+/* Top line: badge, content preview, meta. */
+.row__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
 }
 
 .row:hover {
@@ -268,23 +275,31 @@ body {
   opacity: 0.75;
 }
 
-/* Copy-to-clipboard buttons: hidden until the row is hovered or selected,
-   the way Finder reveals row actions. They sit between the text and the
-   timestamp, so the meta column stays put as they appear. */
+/* Copy-to-clipboard buttons: anchored to the row's bottom-right, always
+   rendered whatever the length of the content above, so their position is
+   stable and they never hide a long preview behind a hover-reveal. */
+.row__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
+  min-height: 20px;
+  margin-top: -1px;
+}
+
 .row__copy {
   flex: none;
   display: grid;
   place-items: center;
   width: 22px;
-  height: 22px;
-  margin: -1px -2px 0 0;
+  height: 20px;
   border: none;
   border-radius: 5px;
   background: transparent;
   color: var(--text-tertiary);
-  opacity: 0;
+  opacity: 0.85;
   cursor: default;
-  transition: opacity 90ms ease, background-color 90ms ease;
+  transition: background-color 90ms ease;
 }
 
 .row__copy svg {
@@ -295,16 +310,8 @@ body {
 
 /* Both row actions share the two-sheet copy glyph; the rich one carries
    sparkles and the plain one stays bare, so the pair reads as one action with
-   two outcomes. The plain one sits a step dimmer than its sparkle twin, but
-   only once the row reveals its actions — a standalone opacity here would
-   override the hidden state above. */
-.row:hover .row__copy,
-.row[aria-selected="true"] .row__copy {
-  opacity: 0.85;
-}
-
-.row:hover .row__copy--plain,
-.row[aria-selected="true"] .row__copy--plain {
+   two outcomes. The plain one sits a step dimmer than its sparkle twin. */
+.row__copy--plain {
   opacity: 0.6;
 }
 
@@ -314,23 +321,34 @@ body {
   opacity: 1;
 }
 
+/* The selected row is an accent block, so its always-visible buttons switch
+   to white to stay legible on it. */
+.row[aria-selected="true"] .row__copy {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.row[aria-selected="true"] .row__copy--plain {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .row[aria-selected="true"] .row__copy:hover {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
 }
 
-/* Copy confirmed: a green pulse on the button that was clicked. Animates
-   box-shadow and colour only — never opacity, whose hidden/revealed states
-   above are load-bearing — so it plays cleanly whatever the row's state.
+/* Copy confirmed: an orange pulse on the button that was clicked, using the
+   app's accent. Animates box-shadow and colour only — never opacity, which
+   is load-bearing for the plain/rich pair — so it plays cleanly whatever
+   the row's state.
    Class-based rather than :active, which would end before the IPC round
    trip resolves. */
 @keyframes copy-flash {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55);
-    color: #34c759;
+    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.55);
+    color: var(--accent);
   }
   100% {
-    box-shadow: 0 0 0 7px rgba(52, 199, 89, 0);
+    box-shadow: 0 0 0 7px rgba(194, 65, 12, 0);
     color: var(--text-tertiary);
   }
 }
@@ -342,11 +360,11 @@ body {
 @media (prefers-color-scheme: dark) {
   @keyframes copy-flash {
     0% {
-      box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.55);
-      color: #30d158;
+      box-shadow: 0 0 0 0 rgba(221, 91, 22, 0.55);
+      color: var(--accent);
     }
     100% {
-      box-shadow: 0 0 0 7px rgba(48, 209, 88, 0);
+      box-shadow: 0 0 0 7px rgba(221, 91, 22, 0);
       color: var(--text-tertiary);
     }
   }

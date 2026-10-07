@@ -24,6 +24,11 @@
   --control-bg: #ffffff;
   --control-shine: rgba(255, 255, 255, 0.9);
 
+  /* Button fills must stand apart from the vibrancy behind them
+     (WCAG 1.4.11), so the fill is a visible gray, not near-white. */
+  --button-bg: #d9d9db;
+  --button-shine: #f3f3f4;
+
   --radius-group: 10px;
   --radius-control: 6px;
 
@@ -48,6 +53,9 @@
     --control-border: rgba(255, 255, 255, 0.2);
     --control-bg: rgba(255, 255, 255, 0.14);
     --control-shine: rgba(255, 255, 255, 0.08);
+
+    --button-bg: rgba(255, 255, 255, 0.22);
+    --button-shine: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -231,8 +239,8 @@ input::placeholder {
   padding: 4px 12px;
   border: 1px solid var(--control-border);
   border-radius: 6px;
-  background: linear-gradient(to bottom, var(--control-shine), var(--control-bg));
-  background-color: var(--control-bg);
+  background: linear-gradient(to bottom, var(--button-shine), var(--button-bg));
+  background-color: var(--button-bg);
   color: var(--text);
   font-family: inherit;
   font-size: 12.5px;
