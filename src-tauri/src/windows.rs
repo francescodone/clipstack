@@ -20,6 +20,9 @@ pub fn open_settings(app: AppHandle) {
         .title("ClipStack Settings")
         .inner_size(560.0, 620.0)
         .min_inner_size(480.0, 420.0)
+        // Transparent so the NSVisualEffectView installed below shows through,
+        // which is what makes the window read as a native System Settings pane.
+        .transparent(true)
         .resizable(true)
         .maximizable(false)
         .closable(true)
@@ -27,7 +30,28 @@ pub fn open_settings(app: AppHandle) {
         .visible(true);
 
     match builder.build() {
-        Ok(_) => promote(&app),
+        Ok(window) => {
+            #[cfg(target_os = "macos")]
+            {
+                // `apply_vibrancy` must run on the main thread; this function
+                // can be reached from tray-menu handlers, which do not run
+                // there. Bounce it if needed.
+                let w = window.clone();
+                if let Err(err) = window.run_on_main_thread(move || {
+                    if let Err(err) = window_vibrancy::apply_vibrancy(
+                        &w,
+                        window_vibrancy::NSVisualEffectMaterial::Sidebar,
+                        Some(window_vibrancy::NSVisualEffectState::Active),
+                        None,
+                    ) {
+                        eprintln!("[clipstack] settings vibrancy unavailable: {err}");
+                    }
+                }) {
+                    eprintln!("[clipstack] could not schedule vibrancy: {err}");
+                }
+            }
+            promote(&app)
+        }
         Err(err) => eprintln!("[clipstack] could not open settings: {err}"),
     }
 }

@@ -9,7 +9,9 @@
 :root {
   --panel-bg: rgba(246, 246, 246, 0.72);
   --panel-border: rgba(0, 0, 0, 0.14);
-  --panel-shadow: 0 22px 70px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.16);
+  /* Must fit inside .picker-body's padding (18px) or the window bounds clip
+     it into a hard rectangular edge. */
+  --panel-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.18);
   --hairline: rgba(0, 0, 0, 0.09);
 
   --text: rgba(0, 0, 0, 0.87);
@@ -35,7 +37,7 @@
   :root {
     --panel-bg: rgba(48, 48, 50, 0.72);
     --panel-border: rgba(255, 255, 255, 0.16);
-    --panel-shadow: 0 22px 70px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+    --panel-shadow: 0 6px 12px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.4);
     --hairline: rgba(255, 255, 255, 0.1);
 
     --text: rgba(255, 255, 255, 0.92);
@@ -69,8 +71,8 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   /* Transparent margin around the panel so the drop shadow is not clipped by
-     the window bounds. */
-  padding: 14px;
+     the window bounds. Keep it >= the shadow's vertical extent. */
+  padding: 18px;
   user-select: none;
   cursor: default;
 }

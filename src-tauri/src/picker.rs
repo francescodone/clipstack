@@ -186,7 +186,11 @@ fn ensure_window(app: &AppHandle) -> Option<tauri::WebviewWindow> {
         .maximizable(false)
         .minimizable(false)
         .closable(false)
-        .shadow(true)
+        // The CSS owns the drop shadow. The native one is computed from the
+        // window's opaque rect — under NSWindowSharingNone it ignores the
+        // rounded alpha shape and draws a rectangular halo around the
+        // transparent margin, which reads as a stray border.
+        .shadow(false)
         .visible(false)
         .focused(false)
         .center();

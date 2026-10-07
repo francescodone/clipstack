@@ -72,6 +72,7 @@ pub fn run() {
             commands::autostart_state,
             commands::set_autostart,
             commands::accessibility_state,
+            commands::reset_accessibility,
             commands::request_accessibility,
             commands::open_accessibility_settings,
             commands::hide_picker,
@@ -127,6 +128,7 @@ fn setup(handle: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     });
 
     tray::build(handle)?;
+
     tray::set_pause_label(handle, poller::is_paused());
 
     let shortcut = settings

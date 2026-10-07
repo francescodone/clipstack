@@ -30,6 +30,7 @@ export const api = {
   accessibilityState: () => invoke<boolean>("accessibility_state"),
   requestAccessibility: () => invoke<void>("request_accessibility"),
   openAccessibilitySettings: () => invoke<void>("open_accessibility_settings"),
+  resetAccessibility: () => invoke<void>("reset_accessibility"),
 
   hidePicker: () => invoke<void>("hide_picker"),
   quit: () => invoke<void>("quit"),

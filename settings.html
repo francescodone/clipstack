@@ -9,7 +9,13 @@
   </head>
   <body class="settings-body">
     <main class="settings">
-      <h1 class="settings__title">ClipStack</h1>
+      <header class="apphead">
+        <img class="apphead__icon" src="/app-icon.png" alt="" width="64" height="64" />
+        <div class="apphead__meta">
+          <h1 class="apphead__name">ClipStack</h1>
+          <p class="apphead__version" id="app-version">—</p>
+        </div>
+      </header>
 
       <section class="group" aria-labelledby="grp-access">
         <h2 id="grp-access" class="group__title">Accessibility</h2>
@@ -22,11 +28,14 @@
             <div class="field__control field__control--buttons">
               <button id="a11y-request" type="button" class="btn">Grant access</button>
               <button id="a11y-open" type="button" class="btn btn--quiet">Open System Settings</button>
+              <button id="a11y-reset" type="button" class="btn btn--quiet">Reset grant</button>
             </div>
           </div>
           <p class="field__note">
             ClipStack needs Accessibility access to send Cmd+V for you. Without it, an item is
-            still placed on your clipboard so you can paste it yourself.
+            still placed on your clipboard so you can paste it yourself. If the switch is on in
+            System Settings but this still says "not granted", the entry belongs to an older
+            build: use <em>Reset grant</em>, then grant it again.
           </p>
         </div>
       </section>

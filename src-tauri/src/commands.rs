@@ -259,6 +259,32 @@ pub fn open_accessibility_settings() {
     crate::macos::accessibility::open_settings();
 }
 
+/// Forget the current Accessibility grant so it can be re-added cleanly.
+///
+/// macOS keys the permission to the binary's path and code signature, so a
+/// rebuilt ad-hoc-signed app can leave a stale entry whose toggle stays on
+/// while the process is still untrusted. `tccutil reset` clears it; the next
+/// grant then binds to the binary that is actually running.
+#[tauri::command]
+pub fn reset_accessibility(app: AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let bundle_id = app.config().identifier.clone();
+        let out = std::process::Command::new("/usr/bin/tccutil")
+            .args(["reset", "Accessibility", &bundle_id])
+            .output()
+            .map_err(|e| format!("could not run tccutil: {e}"))?;
+        if !out.status.success() {
+            return Err("tccutil reported a failure".to_string());
+        }
+        Ok(())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Ok(())
+    }
+}
+
 /// Called by the picker when the user presses Escape or clicks away.
 #[tauri::command]
 pub fn hide_picker(app: AppHandle) {

@@ -34,6 +34,7 @@ const a11yDot = must<HTMLElement>("a11y-dot");
 const a11yText = must<HTMLElement>("a11y-text");
 const a11yRequest = must<HTMLButtonElement>("a11y-request");
 const a11yOpen = must<HTMLButtonElement>("a11y-open");
+const a11yReset = must<HTMLButtonElement>("a11y-reset");
 
 const updateState = must<HTMLElement>("update-state");
 const updateNote = must<HTMLElement>("update-note");
@@ -350,6 +351,16 @@ a11yOpen.addEventListener("click", () => {
   pollAccessibility();
 });
 
+a11yReset.addEventListener("click", () => {
+  // Clear the stale TCC entry, then re-prompt so the new grant binds to the
+  // binary that is actually running.
+  void api
+    .resetAccessibility()
+    .then(() => api.requestAccessibility())
+    .catch(() => undefined);
+  pollAccessibility();
+});
+
 let a11yTimer: number | undefined;
 
 function pollAccessibility(): void {
@@ -456,5 +467,13 @@ window.setTimeout(() => void checkForUpdates(true), 800);
 window.addEventListener("focus", () => {
   void Promise.all([refreshStats(), refreshAccessibility()]);
 });
+
+// The header shows the running version, like a native about pane.
+void getVersion()
+  .then((version) => {
+    const el = document.getElementById("app-version");
+    if (el) el.textContent = `Version ${version}`;
+  })
+  .catch(() => undefined);
 
 void load();
