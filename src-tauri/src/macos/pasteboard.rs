@@ -253,9 +253,16 @@ fn tiff_to_png(tiff: &[u8]) -> Option<Vec<u8>> {
 
 /// Replace the pasteboard contents with one stacked item.
 ///
+/// `format` decides whether a text entry keeps the HTML and RTF flavours it
+/// was captured with (`Rich`) or goes back as the plain string alone
+/// (`Plain`), which is how you drop colour, fonts, and inline images.
+///
 /// Callers must arm the self-write guard first (see `poller::arm_own_write`)
 /// so this does not get recorded as a fresh copy.
-pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
+pub fn write_item(
+    item: &crate::types::ClipItem,
+    format: crate::types::CopyFormat,
+) -> Result<(), String> {
     let pb = pasteboard();
     pb.clearContents();
 
@@ -269,6 +276,9 @@ pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
             let ok = pb.setString_forType(&ns, unsafe { NSPasteboardTypeString });
             if !ok {
                 return Err("the system refused the text write".to_string());
+            }
+            if format == crate::types::CopyFormat::Plain {
+                return Ok(());
             }
             if let Some(html) = &item.html {
                 let data = NSData::from_vec(html.clone().into_bytes());

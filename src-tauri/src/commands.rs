@@ -74,23 +74,27 @@ pub fn paste_clip(app: AppHandle, id: i64) -> Result<(), String> {
 ///
 /// Unlike `paste_clip` this needs no Accessibility permission: it only writes
 /// the pasteboard and lets the user press Cmd+V wherever they like.
+///
+/// `format` is `"plain"` to drop any formatting captured with a text entry,
+/// or anything else (the default) to restore it as it was copied.
 #[tauri::command]
-pub fn copy_clip(app: AppHandle, id: i64) -> Result<(), String> {
+pub fn copy_clip(app: AppHandle, id: i64, format: Option<String>) -> Result<(), String> {
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = (app, id);
+        let _ = (app, id, format);
         return Err("ClipStack only supports copying on macOS".to_string());
     }
 
     #[cfg(target_os = "macos")]
     {
+        let format = crate::types::CopyFormat::from_opt(format.as_deref());
         let (store, _) = handles(&app)?;
         let item = store
             .get(id)?
             .ok_or_else(|| "that item is no longer in the stack".to_string())?;
         // Guard so the poller does not record our own write as a fresh copy.
         crate::poller::arm_own_write();
-        crate::macos::pasteboard::write_item(&item)?;
+        crate::macos::pasteboard::write_item(&item, format)?;
         store.mark_used(id)?;
         let _ = app.emit("stack://changed", id);
         Ok(())
@@ -198,7 +202,9 @@ pub fn close_settings_window(app: AppHandle) {
     if let Some(window) = app.get_webview_window(crate::windows::LABEL) {
         let _ = window.close();
     }
-    crate::windows::demote_if_idle(&app);
+    // The close is queued behind a CloseRequested round-trip that demotes on
+    // its own; demote here too so a missing window cannot strand the Dock icon.
+    crate::windows::demote(&app);
 }
 
 #[tauri::command]

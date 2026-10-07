@@ -140,7 +140,9 @@ fn do_paste(app: &AppHandle, store: &crate::store::Store, id: i64) -> Result<(),
             .ok_or_else(|| "that item is no longer in the stack".to_string())?;
 
         crate::poller::arm_own_write();
-        crate::macos::pasteboard::write_item(&item)?;
+        // Pasting restores the entry exactly as it was copied — formatting and
+        // any inline image included. "Copy as plain text" is a separate command.
+        crate::macos::pasteboard::write_item(&item, crate::types::CopyFormat::Rich)?;
         store.mark_used(id)?;
 
         if needs_permission {

@@ -16,6 +16,10 @@ export interface ClipSummary {
   createdAt: number;
   lastUsedAt: number;
   pinned: boolean;
+  /** A text entry that also captured HTML or RTF, so formatting survives. */
+  hasFormatting: boolean;
+  /** A text entry whose HTML embeds a picture. */
+  hasInlineImage: boolean;
 }
 
 export interface ClipDetail {

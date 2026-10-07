@@ -73,6 +73,33 @@ pub struct ClipSummary {
     pub created_at: i64,
     pub last_used_at: i64,
     pub pinned: bool,
+    /// True when a text entry also carries HTML or RTF, i.e. it can be
+    /// re-copied either as plain text or with its formatting intact.
+    pub has_formatting: bool,
+    /// True when a text entry's HTML embeds a picture, which is why a copy of
+    /// rich text containing an image still files as text: the picture is part
+    /// of the markup, not a separate clipboard image.
+    pub has_inline_image: bool,
+}
+
+/// Which flavours of a stacked entry go back on the pasteboard.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CopyFormat {
+    /// The plain-string flavour only; strips colour, fonts, and inline images.
+    Plain,
+    /// Plain text plus any HTML and RTF captured with it.
+    Rich,
+}
+
+impl CopyFormat {
+    /// The wire value the webviews send; anything unrecognised is rich, which
+    /// is the behaviour every copy command had before this existed.
+    pub fn from_opt(value: Option<&str>) -> Self {
+        match value {
+            Some("plain") => CopyFormat::Plain,
+            _ => CopyFormat::Rich,
+        }
+    }
 }
 
 /// The full payload of one entry, for the preview pane.

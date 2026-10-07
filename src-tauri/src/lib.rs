@@ -95,7 +95,9 @@ pub fn run() {
                     if let Some(window) = app.get_webview_window(&label) {
                         let _ = window.hide();
                     }
-                    windows::demote_if_idle(app);
+                    // Demote unconditionally: the hide above is only queued,
+                    // so a visibility check here would still see the window.
+                    windows::demote(app);
                 }
                 WindowEvent::Destroyed if label == windows::LABEL => {
                     windows::demote_if_idle(app);

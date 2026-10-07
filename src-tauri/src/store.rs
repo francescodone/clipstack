@@ -466,8 +466,13 @@ impl Store {
     }
 }
 
+/// `pinned` plus two computed flags: does this row hold rich flavours, and does
+/// its HTML embed a picture? Both are wrapped so a row with no HTML yields 0
+/// rather than NULL, which the row mapper could not read as a bool.
 const SELECT_ROWS: &str = "SELECT id, kind, preview, text, file_urls, byte_len, width, height,
-        source_app, created_at, last_used_at, pinned
+        source_app, created_at, last_used_at, pinned,
+        IFNULL(html IS NOT NULL OR rtf_path IS NOT NULL, 0),
+        IFNULL(html LIKE '%<img%', 0)
      FROM clip_items
      ORDER BY pinned DESC, last_used_at DESC
      LIMIT ?1";
@@ -497,6 +502,8 @@ fn row_to_summary(row: &rusqlite::Row<'_>) -> rusqlite::Result<ClipSummary> {
         created_at: row.get(9)?,
         last_used_at: row.get(10)?,
         pinned: row.get::<_, i64>(11)? != 0,
+        has_formatting: row.get::<_, i64>(12)? != 0,
+        has_inline_image: row.get::<_, i64>(13)? != 0,
     })
 }
 

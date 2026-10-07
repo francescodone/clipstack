@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Regenerate the ClipStack application icon (1024px master).
 
-Design: the menu bar mark — three offset sheets, the universal copy glyph —
-promoted to an app tile in a restrained, VS Code-ish key: a dark graphite
-squircle with a soft top sheen, and the stack drawn as clean outlines. The
-sheets step from full white in front to dimmed white behind, which gives the
-mark depth without ornament. No badges, no clip, no text lines.
+Design: flat and 2026-oriented. One squircle tile carrying a single soft
+diagonal fade through dark orange, and the menu bar mark promoted to a solid
+glyph whose sheets fade from full white in front to barely-there behind. No
+sheen, no rim light, no drop shadow - the depth comes from the fades alone, the
+way SourceTree's tile achieves it. No badges, no clip, no text lines.
 
     python3 scripts/generate_app_icon.py
 
@@ -23,35 +23,38 @@ SS = 4  # supersample factor
 CANVAS = SIZE * SS
 
 # The mark is the tray icon's geometry: a 36-unit canvas with three rounded
-# sheets staggered by 4 units, stroked 2 units wide, corners at radius 2.
+# sheets staggered by 4 units. Filled rather than stroked here — at tile size
+# outlines read as clutter, and a fade only shows on a solid area.
 UNIT = 36.0
-STROKE = 2.0
-RADIUS = 2.0
 OFFSET = 4.0
-GAP = 0.6  # clear air between a sheet and the edge behind it
+GAP = 1.1  # clear air between a sheet and the edge behind it
+RADIUS = 3.0  # tray units; softer corners, the 2026 look
 
 SHEET_W, SHEET_H = 16.0, 20.0
 FRONT = (6.0, 4.0, 6.0 + SHEET_W, 4.0 + SHEET_H)
 MID = tuple(c + OFFSET for c in FRONT)
 BACK = tuple(c + 2 * OFFSET for c in FRONT)
 
-# Back-to-front paint order with the depth step: dimmed white in the back,
-# full white in front.
+# Back-to-front paint order. The fade is the whole idea: the rearmost sheet is
+# barely present, the front sheet is absolute.
 LAYERS = [
-    (BACK, (255, 255, 255, 110)),
-    (MID, (255, 255, 255, 175)),
+    (BACK, (255, 255, 255, 74)),
+    (MID, (255, 255, 255, 150)),
     (FRONT, (255, 255, 255, 255)),
 ]
 
 # Where the mark sits on the 1024 grid: centred on the group, about half the
 # tile. The group's centre is the middle sheet's centre.
-MARK_SCALE = 19.0  # tray units -> icon units
+MARK_SCALE = 20.0  # tray units -> icon units
 GROUP_CX = (FRONT[0] + BACK[2]) / 2
 GROUP_CY = (FRONT[1] + BACK[3]) / 2
 MARK_CX, MARK_CY = 512.0, 512.0
 
-TILE_TOP = (46, 46, 51, 255)
-TILE_BOTTOM = (20, 20, 24, 255)
+# Tile: one flat diagonal fade through dark, burnt orange. The top-left keeps
+# enough light to read as orange rather than brown, and the bottom-right goes
+# near-black so the glyph still carries the contrast it has in the menu bar.
+TILE_A = (176, 74, 20, 255)  # top-left, lit burnt orange
+TILE_B = (58, 22, 6, 255)  # bottom-right, near-black ember
 
 
 def u(x):
@@ -94,12 +97,23 @@ def to_px(pts):
     return [(u(x), u(y)) for x, y in pts]
 
 
-def vertical_gradient(size, top, bottom):
-    strip = Image.new("RGBA", (1, size))
-    for y in range(size):
-        t = y / (size - 1)
-        strip.putpixel((0, y), tuple(int(a + (b - a) * t) for a, b in zip(top, bottom)))
-    return strip.resize((size, size))
+def diagonal_fade(size, a, b):
+    """Linear gradient running corner to corner, top-left to bottom-right.
+
+    A one-pixel-tall strip holding the ramp is sampled at u = x + y with an
+    affine transform, which is exact and avoids a per-pixel Python loop at
+    supersampled sizes.
+    """
+    strip = Image.new("RGB", (2 * size, 1))
+    px = strip.load()
+    span = 2 * size - 1
+    for x in range(2 * size):
+        t = x / span
+        px[x, 0] = tuple(int(i + (j - i) * t) for i, j in zip(a[:3], b[:3]))
+    out = strip.transform(
+        (size, size), Image.AFFINE, (1, 1, 0, 0, 0, 0), resample=Image.BILINEAR
+    )
+    return out.convert("RGBA")
 
 
 def mark_box(box):
@@ -122,8 +136,8 @@ def expand(box, pad):
 
 
 def draw_tile():
-    """Dark graphite squircle with sheen and a hairline rim."""
-    tile = vertical_gradient(CANVAS, TILE_TOP, TILE_BOTTOM)
+    """Flat squircle carrying one diagonal fade and nothing else."""
+    tile = diagonal_fade(CANVAS, TILE_A, TILE_B)
 
     mask = Image.new("L", (CANVAS, CANVAS), 0)
     ImageDraw.Draw(mask).polygon(squircle_path(512, 512, 448), fill=255)
@@ -132,51 +146,24 @@ def draw_tile():
 
     img = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
     img.paste(tile, (0, 0), mask)
-
-    # Light falling on the tile from above.
-    sheen = Image.new("L", (CANVAS, CANVAS), 0)
-    ImageDraw.Draw(sheen).ellipse([u(-300), u(-760), u(1324), u(520)], fill=34)
-    sheen = sheen.filter(ImageFilter.GaussianBlur(90 * SS))
-    sheen = Image.composite(sheen, Image.new("L", (CANVAS, CANVAS), 0), mask)
-    white = Image.new("RGBA", (CANVAS, CANVAS), (255, 255, 255, 255))
-    white.putalpha(sheen)
-    img.alpha_composite(white)
-
-    # Hairline rim: the edge light on a dark-mode tile.
-    from PIL import ImageChops
-
-    outer = Image.new("L", (CANVAS, CANVAS), 0)
-    ImageDraw.Draw(outer).polygon(squircle_path(512, 512, 448), fill=255)
-    inner = Image.new("L", (CANVAS, CANVAS), 0)
-    ImageDraw.Draw(inner).polygon(squircle_path(512, 512, 448 - 3), fill=255)
-    rim = ImageChops.subtract(outer, inner).point(lambda v: int(v * 0.16))
-    lit = Image.new("RGBA", (CANVAS, CANVAS), (255, 255, 255, 255))
-    lit.putalpha(rim)
-    img.alpha_composite(lit)
     return img
 
 
 def draw_mark():
-    """The three-sheet stack on a transparent layer, tray-icon technique.
+    """Three solid sheets, each punched clear of the sheet in front of it.
 
-    Each sheet's outline is a filled ring — the rounded rect expanded by
-    half the stroke, with the rect shrunk by half the stroke punched out.
-    Stroked polylines show notches at the corners; filled rings stay clean.
-    The area where the next sheet sits is punched out too, so back sheets
-    never touch the front ones — the same air the tray icon has.
+    Filled shapes rather than stroked outlines: a fade only reads on a solid
+    area. The area the next sheet occupies is knocked out so the layers never
+    touch, which is what keeps three translucent sheets legible.
     """
     layer = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 0))
-    half = STROKE * MARK_SCALE / 2
-    pad = (STROKE / 2 + GAP) * MARK_SCALE
+    pad = GAP * MARK_SCALE
 
     for i, (box, colour) in enumerate(LAYERS):
         mask = Image.new("L", (CANVAS, CANVAS), 0)
         md = ImageDraw.Draw(mask)
-        box_px = mark_box(box)
-        outer = to_px(rounded_points(expand(box_px, half), RADIUS * MARK_SCALE + half))
-        inner = to_px(rounded_points(expand(box_px, -half), max(0.0, RADIUS * MARK_SCALE - half)))
-        md.polygon(outer, fill=255)
-        md.polygon(inner, fill=0)
+        body = to_px(rounded_points(mark_box(box), RADIUS * MARK_SCALE))
+        md.polygon(body, fill=255)
         if i + 1 < len(LAYERS):
             nxt = mark_box(LAYERS[i + 1][0])
             gap = to_px(rounded_points(expand(nxt, pad), RADIUS * MARK_SCALE + pad))
@@ -188,18 +175,6 @@ def draw_mark():
 
 def main():
     img = draw_tile()
-
-    # Soft shadow so the sheets float above the tile.
-    shadow = Image.new("L", (CANVAS, CANVAS), 0)
-    sd = ImageDraw.Draw(shadow)
-    for box, _ in LAYERS:
-        sd.polygon(to_px(rounded_points(mark_box(box), RADIUS * MARK_SCALE)), fill=90)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(18 * SS))
-    shadow = shadow.point(lambda v: int(v * 0.5))
-    black = Image.new("RGBA", (CANVAS, CANVAS), (0, 0, 0, 255))
-    black.putalpha(shadow)
-    img.alpha_composite(black)
-
     img.alpha_composite(draw_mark())
 
     img = img.resize((SIZE, SIZE), Image.LANCZOS)

@@ -13,8 +13,8 @@
   --text-secondary: rgba(0, 0, 0, 0.5);
   --text-tertiary: rgba(0, 0, 0, 0.34);
 
-  --accent: #0a84ff;
-  --switch-on: #34c759;
+  --accent: #c2410c;
+  --switch-on: #b8430e;
   --destructive: #ff3b30;
 
   --control-border: rgba(0, 0, 0, 0.14);
@@ -37,8 +37,8 @@
     --text-secondary: rgba(255, 255, 255, 0.58);
     --text-tertiary: rgba(255, 255, 255, 0.36);
 
-    --accent: #0a84ff;
-    --switch-on: #30d158;
+    --accent: #dd5b16;
+    --switch-on: #dd5b16;
     --destructive: #ff453a;
 
     --control-border: rgba(255, 255, 255, 0.2);
@@ -292,7 +292,7 @@ input:focus-visible {
   color: var(--destructive);
 }
 
-/* NSSwitch-shaped toggle: green when on, like every real macOS switch. */
+/* NSSwitch-shaped toggle: the app's orange when on, following the theme. */
 .switch {
   position: relative;
   display: inline-block;

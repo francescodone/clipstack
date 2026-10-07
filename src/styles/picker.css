@@ -20,7 +20,7 @@
 
   --row-selected: rgba(0, 0, 0, 0.07);
   --row-hover: rgba(0, 0, 0, 0.04);
-  --accent: #0a84ff;
+  --accent: #c2410c;
 
   --kbd-bg: rgba(0, 0, 0, 0.06);
   --kbd-border: rgba(0, 0, 0, 0.1);
@@ -46,7 +46,7 @@
 
     --row-selected: rgba(255, 255, 255, 0.12);
     --row-hover: rgba(255, 255, 255, 0.06);
-    --accent: #0a84ff;
+    --accent: #dd5b16;
 
     --kbd-bg: rgba(255, 255, 255, 0.09);
     --kbd-border: rgba(255, 255, 255, 0.14);
@@ -208,17 +208,18 @@ body {
   border-radius: 4px;
   background: var(--kbd-bg);
   color: var(--text-secondary);
-  font-size: 10px;
   line-height: 1;
+}
+
+.row__badge svg {
+  width: 11px;
+  height: 11px;
+  display: block;
 }
 
 .row[aria-selected="true"] .row__badge {
   background: rgba(255, 255, 255, 0.22);
   color: #fff;
-}
-
-.row__badge--image {
-  color: var(--accent);
 }
 
 .row__text {
@@ -288,11 +289,22 @@ body {
 .row__copy svg {
   width: 13px;
   height: 13px;
+  display: block;
 }
 
+/* Both row actions share the two-sheet copy glyph; the rich one carries
+   sparkles and the plain one stays bare, so the pair reads as one action with
+   two outcomes. The plain one sits a step dimmer than its sparkle twin, but
+   only once the row reveals its actions — a standalone opacity here would
+   override the hidden state above. */
 .row:hover .row__copy,
 .row[aria-selected="true"] .row__copy {
   opacity: 0.85;
+}
+
+.row:hover .row__copy--plain,
+.row[aria-selected="true"] .row__copy--plain {
+  opacity: 0.6;
 }
 
 .row__copy:hover {
@@ -317,6 +329,10 @@ body {
   font-size: 12px;
   line-height: 1.5;
   scrollbar-width: thin;
+  /* Read-only pane: selecting text here would compete with dragging over the
+     list, and copying from it is what the row actions are for. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .picker__preview-empty {
@@ -340,8 +356,6 @@ body {
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  user-select: text;
-  cursor: text;
 }
 
 .preview__image {

@@ -37,12 +37,84 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-/** Small inline glyphs for the row badges; never built from user content. */
-const KIND_GLYPH: Record<string, string> = {
-  text: "A",
-  image: "▣",
-  files: "⧉",
+/** Namespace helper for the inline icon set; never built from user content. */
+function svgNode(tag: string, attrs: Record<string, string>): SVGElement {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  return node;
+}
+
+/**
+ * Build one icon from path data. One stroke weight, round joins, no fills
+ * across the whole set, so the kind badges and the row actions read as a
+ * family rather than three unrelated glyphs.
+ */
+function icon(paths: string[], viewBox = "0 0 14 14"): SVGSVGElement {
+  const svg = svgNode("svg", { viewBox, "aria-hidden": "true", focusable: "false" }) as SVGSVGElement;
+  for (const d of paths) {
+    svg.append(
+      svgNode("path", {
+        d,
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "1.3",
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+      }),
+    );
+  }
+  return svg;
+}
+
+/**
+ * The kind badges: text is a run of lines, an image is a framed picture, a
+ * file is a folder. All three share the 14-unit box and stroke weight.
+ */
+const KIND_ICON: Record<string, () => SVGSVGElement> = {
+  text: () => icon(["M2.4 3.9h9.2", "M2.4 7h9.2", "M2.4 10.1h5.6"]),
+  image: () => {
+    const svg = icon(["M1.9 4.1a1.4 1.4 0 0 1 1.4-1.4h7.4a1.4 1.4 0 0 1 1.4 1.4v5.8a1.4 1.4 0 0 1-1.4 1.4H3.3a1.4 1.4 0 0 1-1.4-1.4z", "M2.4 9.1l2.9-2.7 2.2 2 1.7-1.5 2.4 2.2"]);
+    svg.append(
+      svgNode("circle", {
+        cx: "5.1",
+        cy: "5.6",
+        r: "1",
+        fill: "none",
+        stroke: "currentColor",
+        "stroke-width": "1.3",
+      }),
+    );
+    return svg;
+  },
+  files: () => icon(["M1.9 4a1.2 1.2 0 0 1 1.2-1.2h2.5l1.3 1.6h4a1.2 1.2 0 0 1 1.2 1.2v4.6a1.2 1.2 0 0 1-1.2 1.2H3.1A1.2 1.2 0 0 1 1.9 10.2z"]),
 };
+
+/**
+ * Two offset sheets: the copy glyph shared by both row actions. Rounded
+ * corners keep it reading as documents at 13px; the sheets stay empty so the
+ * sparkle pair is the only decoration competing with them.
+ */
+function copyIcon(withSparkle: boolean): SVGSVGElement {
+  const svg = icon([
+    // Back sheet, drawn as the visible L around the front one.
+    "M4.9 4.7V3.4a1.2 1.2 0 0 1 1.2-1.2h3.2a1.2 1.2 0 0 1 1.2 1.2v3.2a1.2 1.2 0 0 1-1.2 1.2H8",
+    // Front sheet.
+    "M3.1 4.9h3.4a1.2 1.2 0 0 1 1.2 1.2v4.2a1.2 1.2 0 0 1-1.2 1.2H3.1a1.2 1.2 0 0 1-1.2-1.2V6.1a1.2 1.2 0 0 1 1.2-1.2z",
+  ]);
+  if (withSparkle) {
+    // Sparkles say "this one keeps what the copy carried" — formatting, and
+    // any inline image — while the unadorned glyph pastes the plain string.
+    // Four-point stars pinched toward the centre: a large one with a small
+    // companion, so the pair still reads at 13px.
+    for (const d of [
+      "M10.9 7.5Q10.9 10.2 13.6 10.2Q10.9 10.2 10.9 12.9Q10.9 10.2 8.2 10.2Q10.9 10.2 10.9 7.5Z",
+      "M8.1 11.3Q8.1 12.5 9.3 12.5Q8.1 12.5 8.1 13.7Q8.1 12.5 6.9 12.5Q8.1 12.5 8.1 11.3Z",
+    ]) {
+      svg.append(svgNode("path", { d, fill: "currentColor", stroke: "none" }));
+    }
+  }
+  return svg;
+}
 
 function subtitleFor(item: ClipSummary): string {
   switch (item.kind) {
@@ -52,8 +124,15 @@ function subtitleFor(item: ClipSummary): string {
         : formatBytes(item.byteLen);
     case "files":
       return item.fileCount === 1 ? "1 file" : `${item.fileCount} files`;
-    default:
-      return item.lineCount > 1 ? `${item.lineCount} lines` : item.sourceApp ?? "Text";
+    default: {
+      const head = item.lineCount > 1 ? `${item.lineCount} lines` : item.sourceApp ?? "Text";
+      // Say what the capture actually holds: rich text that embeds a picture
+      // files as text (the image lives inside the markup), which otherwise
+      // reads like a misclassification.
+      if (item.hasInlineImage) return `${head} · formatted + image`;
+      if (item.hasFormatting) return `${head} · formatted`;
+      return head;
+    }
   }
 }
 
@@ -76,7 +155,8 @@ function renderList(): void {
     row.setAttribute("aria-selected", String(index === selected));
     row.dataset.index = String(index);
 
-    const badge = el("span", `row__badge row__badge--${item.kind}`, KIND_GLYPH[item.kind]);
+    const badge = el("span", `row__badge row__badge--${item.kind}`);
+    badge.append((KIND_ICON[item.kind] ?? KIND_ICON.text)());
     row.append(badge);
 
     const text = el("span", "row__text");
@@ -99,27 +179,40 @@ function renderList(): void {
     meta.append(el("span", undefined, formatAgo(item.createdAt)));
     row.append(meta);
 
-    // Copy-only action: puts the item on the clipboard without pasting.
+    // Copy-only action: puts the item on the clipboard without pasting. On a
+    // formatted text row this is the rich variant, marked with sparkles.
+    const rich = item.kind === "text" && item.hasFormatting;
     const copy = el("button", "row__copy");
     copy.type = "button";
-    copy.title = "Copy to clipboard (⌘C)";
+    copy.title = rich
+      ? "Copy as it was copied, formatting included (⌘C)"
+      : "Copy to clipboard (⌘C)";
     copy.setAttribute("aria-label", "Copy to clipboard");
-    const copyIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    copyIcon.setAttribute("viewBox", "0 0 14 14");
-    copyIcon.setAttribute("aria-hidden", "true");
-    const copyPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    copyPath.setAttribute("fill", "none");
-    copyPath.setAttribute("stroke", "currentColor");
-    copyPath.setAttribute("stroke-width", "1.4");
-    copyPath.setAttribute("stroke-linejoin", "round");
-    copyPath.setAttribute("d", "M5.2 5.2V2.6h6.2v6.2H8.8M2.6 5.2h6.2v6.2H2.6z");
-    copyIcon.append(copyPath);
-    copy.append(copyIcon);
+    copy.append(copyIcon(rich));
     copy.addEventListener("click", (event) => {
       event.stopPropagation();
-      void copyToClipboard(index);
+      void copyToClipboard(index, "rich");
     });
     row.append(copy);
+
+    // Second command for text that captured formatting: the same payload
+    // stripped to the plain string (drops colour, fonts, inline images). Same
+    // copy glyph, undecorated, so the pair reads as one action with two
+    // outcomes rather than two unrelated buttons.
+    if (rich) {
+      const plain = el("button", "row__copy row__copy--plain");
+      plain.type = "button";
+      plain.title = item.hasInlineImage
+        ? "Copy as plain text — drops the formatting and inline image (⌘⇧C)"
+        : "Copy as plain text — drops the formatting (⌘⇧C)";
+      plain.setAttribute("aria-label", "Copy as plain text");
+      plain.append(copyIcon(false));
+      plain.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void copyToClipboard(index, "plain");
+      });
+      row.append(plain);
+    }
 
     resultsEl.append(row);
   });
@@ -186,7 +279,9 @@ async function showPreview(item: ClipSummary | undefined): Promise<void> {
     const list = el("ul", "preview__files");
     for (const url of detail.fileUrls) {
       const entry = el("li", "preview__file");
-      entry.append(el("span", "row__badge row__badge--files", KIND_GLYPH.files));
+      const mark = el("span", "row__badge row__badge--files");
+      mark.append(KIND_ICON.files());
+      entry.append(mark);
       entry.append(el("span", "preview__file-name", basename(url)));
       list.append(entry);
     }
@@ -289,16 +384,16 @@ async function paste(index: number): Promise<void> {
   }
 }
 
-async function copyToClipboard(index: number): Promise<void> {
+async function copyToClipboard(index: number, format: "plain" | "rich" = "rich"): Promise<void> {
   const item = items[index];
   if (!item) return;
   try {
-    await api.copyClip(item.id);
+    await api.copyClip(item.id, format);
   } catch (error) {
     setStatus(describe(error), "error");
     return;
   }
-  setStatus("Copied to the clipboard");
+  setStatus(format === "plain" ? "Copied as plain text" : "Copied to the clipboard");
 }
 
 async function removeSelected(): Promise<void> {
@@ -356,7 +451,8 @@ function onKeyDown(event: KeyboardEvent): void {
         return;
       }
       event.preventDefault();
-      void copyToClipboard(selected);
+      // Cmd+Shift+C strips whatever formatting the text entry captured.
+      void copyToClipboard(selected, event.shiftKey ? "plain" : "rich");
       return;
     }
     if (event.key.toLowerCase() === "p") {

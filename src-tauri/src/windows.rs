@@ -65,16 +65,32 @@ pub fn promote(app: &AppHandle) {
     }
 }
 
-/// Back to a menu-bar-only app.
+/// Back to a menu-bar-only app, unconditionally.
 ///
-/// Checks that a window *exists*, not that it is visible: a hidden-but-alive
-/// settings window would otherwise leave the Dock icon stuck on.
+/// Use this right after hiding or closing the settings window yourself:
+/// `hide()` is dispatched to the event loop, so an `is_visible()` check made
+/// in the same callback still sees the window on screen and would skip the
+/// demote, leaving the Dock icon stuck.
+pub fn demote(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+}
+
+/// Back to a menu-bar-only app if nothing needs the Dock icon.
+///
+/// Checks whether the settings window is *visible*, not whether it exists:
+/// closing it hides rather than destroys the window (so it reopens instantly).
 pub fn demote_if_idle(app: &AppHandle) {
     #[cfg(target_os = "macos")]
     {
-        let busy = app.get_webview_window(LABEL).is_some();
+        let busy = app
+            .get_webview_window(LABEL)
+            .map(|window| window.is_visible().unwrap_or(false))
+            .unwrap_or(false);
         if !busy {
-            let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            demote(app);
         }
     }
 }

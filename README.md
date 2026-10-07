@@ -49,6 +49,22 @@ When you pick an entry from the stack:
 | Image | PNG, GIF (bytes kept, animation intact), or TIFF converted to PNG | `public.png` + `public.tiff` |
 | Files | the file URLs (lazy — contents are never copied) | real file objects, not their paths |
 
+**How an entry is classified.** One copy can put several flavours on the
+pasteboard at once, so ClipStack picks a single kind by precedence: **files →
+image → text**. That is why:
+
+- copying a file from Finder stacks it as **Files**, not text — Finder also puts
+  the path on the pasteboard, and pasting the file beats pasting its path;
+- copying a picture stacks it as **Image** even when a caption travels with it;
+- copying rich text that has an image *inside* it stacks as **Text**, because
+  the picture is part of the HTML/RTF markup rather than a standalone image
+  flavour. The row is labelled `formatted + image` so this is visible, and
+  pasting it restores the markup, image and all.
+
+For a text entry that captured formatting, the picker offers two copy
+commands: copy as it was copied (⌘C, keeps formatting) or copy as plain text
+(⌘⇧C, strips formatting and any inline image).
+
 Entries are deduplicated by SHA-256: copying the same thing again promotes the
 existing entry to the top instead of adding a second copy. Image bytes are
 stored on disk under `~/Library/Application Support/com.fradone.clipstack/blobs/`
@@ -68,6 +84,7 @@ copy.
 | ↑ ↓ / ↵ | move and paste |
 | Cmd+1…9 | paste the matching row directly |
 | Cmd+C | copy the selected item to the clipboard without pasting |
+| Cmd+Shift+C | copy the selected text as plain text, dropping its formatting |
 | Cmd+P | pin an entry so it cannot be evicted |
 | Cmd+Backspace | delete an entry from the stack |
 | Esc | dismiss the picker |
