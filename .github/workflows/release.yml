@@ -1,0 +1,68 @@
+name: Release
+
+# Publish a GitHub Release with the macOS app bundles whenever a version tag
+# (e.g. v0.1.0) is pushed. To cut a release:
+#
+#   npm version patch          # bumps package.json + tauri.conf.json + Cargo.toml
+#   git push && git push --tags
+#
+# The build is unsigned, so first launch needs a right-click -> Open to get
+# past Gatekeeper. Add Apple signing/notarization secrets later to remove that.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag & release (e.g. 0.1.0), no leading 'v'"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+          - target: x86_64-apple-darwin
+            args: "--target x86_64-apple-darwin"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Create GitHub release and build app (first target only)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "ClipStack v__VERSION__"
+          releaseBody: "See the assets below to download ClipStack for macOS."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
