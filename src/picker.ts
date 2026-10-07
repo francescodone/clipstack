@@ -164,21 +164,6 @@ function renderList(): void {
     text.append(el("span", "row__sub", subtitleFor(item)));
     row.append(text);
 
-    const meta = el("span", "row__meta");
-    if (item.pinned) {
-      const pin = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      pin.setAttribute("class", "row__pin");
-      pin.setAttribute("viewBox", "0 0 12 12");
-      pin.setAttribute("aria-hidden", "true");
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("fill", "currentColor");
-      path.setAttribute("d", "M6 1.2 7.4 4.6 11 4.9 8.3 7.3 9 10.8 6 9 3 10.8 3.7 7.3 1 4.9 4.6 4.6Z");
-      pin.append(path);
-      meta.append(pin);
-    }
-    meta.append(el("span", undefined, formatAgo(item.createdAt)));
-    row.append(meta);
-
     // Copy-only action: puts the item on the clipboard without pasting. On a
     // formatted text row this is the rich variant, marked with sparkles.
     const rich = item.kind === "text" && item.hasFormatting;
@@ -191,7 +176,7 @@ function renderList(): void {
     copy.append(copyIcon(rich));
     copy.addEventListener("click", (event) => {
       event.stopPropagation();
-      void copyToClipboard(index, "rich");
+      void copyToClipboard(index, "rich", copy);
     });
     row.append(copy);
 
@@ -209,10 +194,27 @@ function renderList(): void {
       plain.append(copyIcon(false));
       plain.addEventListener("click", (event) => {
         event.stopPropagation();
-        void copyToClipboard(index, "plain");
+        void copyToClipboard(index, "plain", plain);
       });
       row.append(plain);
     }
+
+    // Age/pin meta last, so the copy actions sit between the text and the
+    // timestamp and the row's right edge stays a stable, static column.
+    const meta = el("span", "row__meta");
+    if (item.pinned) {
+      const pin = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      pin.setAttribute("class", "row__pin");
+      pin.setAttribute("viewBox", "0 0 12 12");
+      pin.setAttribute("aria-hidden", "true");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("fill", "currentColor");
+      path.setAttribute("d", "M6 1.2 7.4 4.6 11 4.9 8.3 7.3 9 10.8 6 9 3 10.8 3.7 7.3 1 4.9 4.6 4.6Z");
+      pin.append(path);
+      meta.append(pin);
+    }
+    meta.append(el("span", undefined, formatAgo(item.createdAt)));
+    row.append(meta);
 
     resultsEl.append(row);
   });
@@ -384,7 +386,22 @@ async function paste(index: number): Promise<void> {
   }
 }
 
-async function copyToClipboard(index: number, format: "plain" | "rich" = "rich"): Promise<void> {
+/**
+ * Restart the button's confirm animation. Removing the class before re-adding
+ * it — with a forced reflow in between — makes an already-finished animation
+ * play again on repeat clicks instead of silently no-op'ing.
+ */
+function flashButton(button: HTMLElement): void {
+  button.classList.remove("row__copy--flash");
+  void button.offsetWidth;
+  button.classList.add("row__copy--flash");
+}
+
+async function copyToClipboard(
+  index: number,
+  format: "plain" | "rich" = "rich",
+  source?: HTMLElement,
+): Promise<void> {
   const item = items[index];
   if (!item) return;
   try {
@@ -393,6 +410,14 @@ async function copyToClipboard(index: number, format: "plain" | "rich" = "rich")
     setStatus(describe(error), "error");
     return;
   }
+  // Only on success: a blink on a failed copy would be a lie. The keyboard
+  // path has no clicked button, so it flashes the row's primary copy action.
+  const button =
+    source ??
+    resultsEl.querySelector<HTMLElement>(
+      `[data-index="${index}"] .row__copy${format === "plain" ? "--plain" : ""}`,
+    );
+  if (button) flashButton(button);
   setStatus(format === "plain" ? "Copied as plain text" : "Copied to the clipboard");
 }
 

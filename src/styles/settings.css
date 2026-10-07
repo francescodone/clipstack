@@ -16,6 +16,9 @@
   --accent: #c2410c;
   --switch-on: #b8430e;
   --destructive: #ff3b30;
+  /* System green: reserved for state dots, so a granted state never reads as
+     the app's orange accent. */
+  --success: #34c759;
 
   --control-border: rgba(0, 0, 0, 0.14);
   --control-bg: #ffffff;
@@ -40,6 +43,7 @@
     --accent: #dd5b16;
     --switch-on: #dd5b16;
     --destructive: #ff453a;
+    --success: #30d158;
 
     --control-border: rgba(255, 255, 255, 0.2);
     --control-bg: rgba(255, 255, 255, 0.14);
@@ -384,10 +388,13 @@ input:focus-visible {
   background: var(--text-tertiary);
 }
 
+/* Granted: green, the universal "it works" — never the orange accent, which
+   would read as decoration rather than status. */
 .dot--ok {
-  background: var(--switch-on);
+  background: var(--success);
 }
 
+/* Not granted: red, matching the destructive tone used elsewhere. */
 .dot--missing {
   background: var(--destructive);
 }
