@@ -1,6 +1,6 @@
 [package]
 name = "clipstack"
-version = "0.2.0"
+version = "0.3.0"
 description = "ClipStack - a clipboard stack for macOS"
 authors = ["donefran"]
 edition = "2021"
