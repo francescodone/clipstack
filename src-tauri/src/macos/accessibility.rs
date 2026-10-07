@@ -49,10 +49,8 @@ pub fn open_settings() {
 fn open_url(url: &str) -> Result<(), String> {
     let ns = NSString::from_str(url);
     let ns_url = NSURL::URLWithString(&ns).ok_or_else(|| format!("not a URL: {url}"))?;
-    let ok = unsafe {
-        let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace();
-        workspace.openURL(&ns_url)
-    };
+    let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace();
+    let ok = workspace.openURL(&ns_url);
     if ok {
         Ok(())
     } else {

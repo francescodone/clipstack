@@ -29,28 +29,26 @@ fn ns_window(window: &WebviewWindow) -> Result<&'static NSWindow, String> {
 /// Apply the panel behaviour once, right after the window is built.
 pub fn configure_panel(window: &WebviewWindow) -> Result<(), String> {
     let ns = ns_window(window)?;
-    unsafe {
-        // `CanJoinAllSpaces` and `MoveToActiveSpace` are mutually exclusive;
-        // OR-ing both misbehaves, so only the former is used here.
-        ns.setCollectionBehavior(
-            NSWindowCollectionBehavior::CanJoinAllSpaces
-                | NSWindowCollectionBehavior::FullScreenAuxiliary
-                | NSWindowCollectionBehavior::Stationary
-                | NSWindowCollectionBehavior::IgnoresCycle,
-        );
-        // Without this the panel vanishes the instant we activate it.
-        ns.setHidesOnDeactivate(false);
-        ns.setLevel(LEVEL_HIDDEN);
-    }
+    // `CanJoinAllSpaces` and `MoveToActiveSpace` are mutually exclusive;
+    // OR-ing both misbehaves, so only the former is used here.
+    ns.setCollectionBehavior(
+        NSWindowCollectionBehavior::CanJoinAllSpaces
+            | NSWindowCollectionBehavior::FullScreenAuxiliary
+            | NSWindowCollectionBehavior::Stationary
+            | NSWindowCollectionBehavior::IgnoresCycle,
+    );
+    // Without this the panel vanishes the instant we activate it.
+    ns.setHidesOnDeactivate(false);
+    ns.setLevel(LEVEL_HIDDEN);
     Ok(())
 }
 
 pub fn raise(window: &WebviewWindow) -> Result<(), String> {
-    unsafe { ns_window(window)?.setLevel(LEVEL_VISIBLE) }
+    ns_window(window)?.setLevel(LEVEL_VISIBLE);
     Ok(())
 }
 
 pub fn lower(window: &WebviewWindow) -> Result<(), String> {
-    unsafe { ns_window(window)?.setLevel(LEVEL_HIDDEN) }
+    ns_window(window)?.setLevel(LEVEL_HIDDEN);
     Ok(())
 }

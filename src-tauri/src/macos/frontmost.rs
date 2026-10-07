@@ -20,11 +20,11 @@ pub struct Target {
 }
 
 fn workspace() -> objc2::rc::Retained<NSWorkspace> {
-    unsafe { NSWorkspace::sharedWorkspace() }
+    NSWorkspace::sharedWorkspace()
 }
 
 fn running(pid: i32) -> Option<objc2::rc::Retained<NSRunningApplication>> {
-    unsafe { NSRunningApplication::runningApplicationWithProcessIdentifier(pid) }
+    NSRunningApplication::runningApplicationWithProcessIdentifier(pid)
 }
 
 fn describe(app: &NSRunningApplication) -> Target {
@@ -95,9 +95,11 @@ pub fn activate_and_wait(pid: i32, timeout: Duration) -> bool {
     let Some(app) = running(pid) else {
         return false;
     };
-    unsafe {
-        app.activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps)
-    };
+    // Deprecated on macOS 14, where the system ignores it; still required to
+    // force activation on macOS 13 and earlier, where it is a no-op error to
+    // omit it.
+    #[allow(deprecated)]
+    app.activateWithOptions(NSApplicationActivationOptions::ActivateIgnoringOtherApps);
 
     let start = Instant::now();
     while start.elapsed() < timeout {

@@ -29,12 +29,6 @@ pub fn data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-pub fn blobs_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    let dir = data_dir(app)?.join("blobs");
-    fs::create_dir_all(&dir).map_err(|e| format!("could not create {}: {e}", dir.display()))?;
-    Ok(dir)
-}
-
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(config_dir(app)?.join(SETTINGS_FILE))
 }

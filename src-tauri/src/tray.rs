@@ -11,7 +11,6 @@ pub const ID_PICKER: &str = "menu-picker";
 pub const ID_SETTINGS: &str = "menu-settings";
 pub const ID_PAUSE: &str = "menu-pause";
 pub const ID_CLEAR: &str = "menu-clear";
-pub const ID_QUIT: &str = "menu-quit";
 
 pub const TRAY_ID: &str = "clipstack-tray";
 

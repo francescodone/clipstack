@@ -16,7 +16,6 @@ use std::{
 
 use tauri::{AppHandle, Emitter};
 
-use crate::config;
 use crate::macos::{frontmost, pasteboard};
 use crate::store::Store;
 use crate::types::{Captured, Settings};
@@ -124,14 +123,5 @@ fn poll_once(app: &AppHandle, store: &Arc<Store>, settings: &Arc<Mutex<Settings>
         Err(err) => {
             eprintln!("[clipstack] could not stack an item: {err}");
         }
-    }
-}
-
-/// Re-read settings from disk, used after the settings window edits them.
-pub fn reload_settings(app: &AppHandle, settings: &Arc<Mutex<Settings>>) {
-    let loaded = config::load(app);
-    set_paused(loaded.paused);
-    if let Ok(mut guard) = settings.lock() {
-        *guard = loaded;
     }
 }

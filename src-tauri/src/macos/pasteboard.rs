@@ -27,7 +27,7 @@ const CONCEALED_TYPES: &[&str] = &[
 const NS_FILENAMES_PBOARD_TYPE: &str = "NSFilenamesPboardType";
 
 fn pasteboard() -> objc2::rc::Retained<NSPasteboard> {
-    unsafe { NSPasteboard::generalPasteboard() }
+    NSPasteboard::generalPasteboard()
 }
 
 /// The pasteboard write counter. Increments on every write by any process.
@@ -39,7 +39,7 @@ pub fn change_count() -> i64 {
 
 fn type_names() -> Vec<String> {
     let pb = pasteboard();
-    let Some(types) = (unsafe { pb.types() }) else {
+    let Some(types) = pb.types() else {
         return Vec::new();
     };
     let mut out = Vec::with_capacity(types.count());
@@ -58,12 +58,12 @@ fn has_concealed_type(names: &[String]) -> bool {
 
 fn read_string(paste_type: &objc2_foundation::NSString) -> Option<String> {
     let pb = pasteboard();
-    unsafe { pb.stringForType(paste_type) }.map(|s| s.to_string())
+    pb.stringForType(paste_type).map(|s| s.to_string())
 }
 
 fn read_data(paste_type: &objc2_foundation::NSString) -> Option<Vec<u8>> {
     let pb = pasteboard();
-    unsafe { pb.dataForType(paste_type) }.map(|d| d.to_vec())
+    pb.dataForType(paste_type).map(|d| d.to_vec())
 }
 
 /// Read whatever is on the pasteboard right now, classified and filtered.
@@ -113,7 +113,8 @@ fn read_file_urls(names: &[String]) -> Option<Vec<String>> {
         // `propertyListForType` hands back an untyped object, and `NSArray` is
         // downcastable only in its unparameterised form, so each element is
         // narrowed to `NSString` individually.
-        let paths: Option<Vec<String>> = unsafe { pb.propertyListForType(&key) }
+        let paths: Option<Vec<String>> = pb
+            .propertyListForType(&key)
             .and_then(|plist| plist.downcast::<NSArray>().ok())
             .map(|array| {
                 let mut out = Vec::with_capacity(array.count());
@@ -256,7 +257,7 @@ fn tiff_to_png(tiff: &[u8]) -> Option<Vec<u8>> {
 /// so this does not get recorded as a fresh copy.
 pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
     let pb = pasteboard();
-    unsafe { pb.clearContents() };
+    pb.clearContents();
 
     match item.kind {
         crate::types::ClipKind::Text => {
@@ -265,18 +266,18 @@ pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
                 .as_deref()
                 .ok_or_else(|| "that stacked text entry has no text".to_string())?;
             let ns = NSString::from_str(text);
-            let ok = unsafe { pb.setString_forType(&ns, unsafe { NSPasteboardTypeString }) };
+            let ok = pb.setString_forType(&ns, unsafe { NSPasteboardTypeString });
             if !ok {
                 return Err("the system refused the text write".to_string());
             }
             if let Some(html) = &item.html {
                 let data = NSData::from_vec(html.clone().into_bytes());
-                unsafe { pb.setData_forType(Some(&data), unsafe { NSPasteboardTypeHTML }) };
+                pb.setData_forType(Some(&data), unsafe { NSPasteboardTypeHTML });
             }
             if let Some(rtf_path) = &item.rtf_path {
                 if let Ok(bytes) = std::fs::read(rtf_path) {
                     let data = NSData::from_vec(bytes);
-                    unsafe { pb.setData_forType(Some(&data), unsafe { NSPasteboardTypeRTF }) };
+                    pb.setData_forType(Some(&data), unsafe { NSPasteboardTypeRTF });
                 }
             }
             Ok(())
@@ -295,7 +296,7 @@ pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
             } else {
                 unsafe { NSPasteboardTypePNG }
             };
-            let ok = unsafe { pb.setData_forType(Some(&data), primary) };
+            let ok = pb.setData_forType(Some(&data), primary);
             if !ok {
                 return Err("the system refused the image write".to_string());
             }
@@ -303,7 +304,7 @@ pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
             if mime != "image/tiff" {
                 if let Some(tiff) = png_to_tiff(&bytes) {
                     let tiff_data = NSData::with_bytes(&tiff);
-                    unsafe { pb.setData_forType(Some(&tiff_data), unsafe { NSPasteboardTypeTIFF }) };
+                    pb.setData_forType(Some(&tiff_data), unsafe { NSPasteboardTypeTIFF });
                 }
             }
             Ok(())
@@ -317,11 +318,11 @@ pub fn write_item(item: &crate::types::ClipItem) -> Result<(), String> {
             >> = Vec::with_capacity(item.file_urls.len());
             for path in &item.file_urls {
                 let ns_path = NSString::from_str(path);
-                let url = unsafe { objc2_foundation::NSURL::fileURLWithPath(&ns_path) };
+                let url = objc2_foundation::NSURL::fileURLWithPath(&ns_path);
                 objects.push(objc2::runtime::ProtocolObject::from_retained(url));
             }
             let array = NSArray::from_retained_slice(&objects);
-            let ok = unsafe { pb.writeObjects(&array) };
+            let ok = pb.writeObjects(&array);
             if ok {
                 Ok(())
             } else {
@@ -349,15 +350,3 @@ fn png_to_tiff(bytes: &[u8]) -> Option<Vec<u8>> {
     Some(out.into_inner())
 }
 
-/// Put a plain string on the pasteboard without any history bookkeeping.
-pub fn write_plain_text(text: &str) -> Result<(), String> {
-    let pb = pasteboard();
-    unsafe { pb.clearContents() };
-    let ns = NSString::from_str(text);
-    let ok = unsafe { pb.setString_forType(&ns, unsafe { NSPasteboardTypeString }) };
-    if ok {
-        Ok(())
-    } else {
-        Err("the system refused the text write".to_string())
-    }
-}

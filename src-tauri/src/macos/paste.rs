@@ -22,8 +22,6 @@ const FLAG_COMMAND: u64 = 0x100_0000;
 /// `kCGHIDEventTap` / `kCGSessionEventTap`.
 const TAP_SESSION: u32 = 1;
 
-/// How long to wait for the target app to actually become frontmost.
-const ACTIVATE_TIMEOUT: Duration = Duration::from_millis(400);
 /// Gap between key-down and key-up. Zero works on most apps but not all.
 const KEY_HOLD: Duration = Duration::from_millis(12);
 
@@ -70,16 +68,6 @@ pub fn paste_keystroke(pid: Option<i32>) -> Result<(), String> {
     Ok(())
 }
 
-/// Whether we may post events at all. False means Accessibility is not granted.
-pub fn can_post_events() -> bool {
-    unsafe { CGPreflightPostEventAccess() }
-}
-
-/// Ask the system for permission to post events.
-pub fn request_event_access() {
-    unsafe { CGRequestPostEventAccess() };
-}
-
 /// Raw CoreGraphics bindings. `objc2-core-graphics` covers this too, but the
 /// surface needed here is four functions and a release call.
 mod core_graphics_ffi {
@@ -97,8 +85,6 @@ mod core_graphics_ffi {
         pub fn CGEventSetFlags(event: *mut c_void, flags: u64);
         pub fn CGEventPost(tap: u32, event: *mut c_void);
         pub fn CGEventPostToPid(pid: i32, event: *mut c_void);
-        pub fn CGPreflightPostEventAccess() -> bool;
-        pub fn CGRequestPostEventAccess();
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
