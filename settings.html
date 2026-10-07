@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClipStack Settings</title>
+    <link rel="stylesheet" href="/src/styles/settings.css" />
+    <script type="module" src="/src/settings.ts" defer></script>
+  </head>
+  <body class="settings-body">
+    <main class="settings">
+      <h1 class="settings__title">ClipStack</h1>
+
+      <section class="group" aria-labelledby="grp-access">
+        <h2 id="grp-access" class="group__title">Accessibility</h2>
+        <div class="group__box">
+          <div class="field field--info">
+            <div class="field__label">
+              <span id="a11y-dot" class="dot dot--unknown"></span>
+              <span id="a11y-text">Checking…</span>
+            </div>
+            <div class="field__control field__control--buttons">
+              <button id="a11y-request" type="button" class="btn">Grant access</button>
+              <button id="a11y-open" type="button" class="btn btn--quiet">Open System Settings</button>
+            </div>
+          </div>
+          <p class="field__note">
+            ClipStack needs Accessibility access to send Cmd+V for you. Without it, an item is
+            still placed on your clipboard so you can paste it yourself.
+          </p>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="grp-shortcut">
+        <h2 id="grp-shortcut" class="group__title">Shortcut</h2>
+        <div class="group__box">
+          <div class="field">
+            <label class="field__label" for="shortcut">Show the stack</label>
+            <div class="field__control field__control--shortcut">
+              <button id="shortcut" type="button" class="recorder" aria-live="polite"></button>
+              <button id="shortcut-reset" type="button" class="btn btn--quiet" title="Restore Cmd+Shift+V">Reset</button>
+            </div>
+          </div>
+          <p class="field__note" id="shortcut-note">
+            Click the field, then press the combination you want. It must include ⌘.
+          </p>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="grp-capture">
+        <h2 id="grp-capture" class="group__title">Capture</h2>
+        <div class="group__box">
+          <div class="field">
+            <label class="field__label" for="capture-text">Text</label>
+            <span class="switch"><input id="capture-text" type="checkbox" /></span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="capture-images">Images</label>
+            <span class="switch"><input id="capture-images" type="checkbox" /></span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="capture-files">Files</label>
+            <span class="switch"><input id="capture-files" type="checkbox" /></span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="max-items">Keep up to</label>
+            <div class="field__control field__control--number">
+              <input id="max-items" type="number" min="10" max="1000" step="10" inputmode="numeric" />
+              <span class="field__suffix">items</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="excluded">Never capture from</label>
+            <div class="field__control field__control--text">
+              <input id="excluded" type="text" placeholder="App name or bundle id, then Enter" />
+            </div>
+          </div>
+          <ul id="excluded-list" class="chips" aria-label="Excluded apps"></ul>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="grp-privacy">
+        <h2 id="grp-privacy" class="group__title">Privacy</h2>
+        <div class="group__box">
+          <div class="field">
+            <label class="field__label" for="content-protection">Keep the stack out of screenshots</label>
+            <span class="switch"><input id="content-protection" type="checkbox" /></span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="preserve">Remember the stack after quitting</label>
+            <span class="switch"><input id="preserve" type="checkbox" /></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="grp-general">
+        <h2 id="grp-general" class="group__title">General</h2>
+        <div class="group__box">
+          <div class="field">
+            <label class="field__label" for="autostart">Open at login</label>
+            <span class="switch"><input id="autostart" type="checkbox" /></span>
+          </div>
+          <div class="field">
+            <label class="field__label" for="paused">Pause capture</label>
+            <span class="switch"><input id="paused" type="checkbox" /></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="grp-stack">
+        <h2 id="grp-stack" class="group__title">The stack</h2>
+        <div class="group__box">
+          <div class="field field--info">
+            <div class="field__label" id="stack-summary">—</div>
+            <div class="field__control field__control--buttons">
+              <button id="clear" type="button" class="btn btn--destructive">Clear stack</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="settings__footer">
+        <span id="saved" class="settings__saved" aria-live="polite"></span>
+        <button id="quit" type="button" class="btn btn--quiet">Quit ClipStack</button>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,384 @@
+/* Settings, styled as a macOS "inset grouped" form: a plain window background
+ * with rounded rows, hairline separators, and native-feeling switches. */
+
+:root {
+  --window-bg: #ececec;
+  --group-bg: #ffffff;
+  --group-border: rgba(0, 0, 0, 0.07);
+  --separator: rgba(0, 0, 0, 0.07);
+
+  --text: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.5);
+  --text-tertiary: rgba(0, 0, 0, 0.34);
+
+  --accent: #0a84ff;
+  --destructive: #ff3b30;
+
+  --control-border: rgba(0, 0, 0, 0.16);
+  --control-bg: #ffffff;
+
+  --radius-group: 8px;
+  --radius-control: 6px;
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --window-bg: #1e1e1f;
+    --group-bg: rgba(255, 255, 255, 0.07);
+    --group-border: rgba(255, 255, 255, 0.06);
+    --separator: rgba(255, 255, 255, 0.08);
+
+    --text: rgba(255, 255, 255, 0.9);
+    --text-secondary: rgba(255, 255, 255, 0.58);
+    --text-tertiary: rgba(255, 255, 255, 0.36);
+
+    --accent: #0a84ff;
+    --destructive: #ff453a;
+
+    --control-border: rgba(255, 255, 255, 0.22);
+    --control-bg: rgba(0, 0, 0, 0.28);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--window-bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+.settings {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 22px 20px 8px;
+}
+
+.settings__title {
+  margin: 0 0 18px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ------------------------------------------------------------------ groups */
+
+.group {
+  margin-bottom: 22px;
+}
+
+.group__title {
+  margin: 0 0 6px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.group__box {
+  background: var(--group-bg);
+  border: 1px solid var(--group-border);
+  border-radius: var(--radius-group);
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------- rows */
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 38px;
+  padding: 7px 12px;
+}
+
+.field + .field {
+  border-top: 1px solid var(--separator);
+}
+
+.field--info {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.field__note {
+  margin: 0;
+  padding: 0 12px 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.field__control {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field__control--buttons {
+  gap: 8px;
+}
+
+.field__control--number {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field__control--text {
+  flex: 1;
+  min-width: 0;
+}
+
+.field__suffix {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ---------------------------------------------------------------- controls */
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+}
+
+input[type="number"] {
+  width: 74px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.btn {
+  padding: 4px 11px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: default;
+  transition: background-color 80ms ease, opacity 80ms ease;
+}
+
+.btn:hover {
+  background: color-mix(in srgb, var(--control-bg) 82%, var(--text) 6%);
+}
+
+.btn:active {
+  opacity: 0.7;
+}
+
+.btn--quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.btn--quiet:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+}
+
+.btn--destructive {
+  color: var(--destructive);
+}
+
+.btn:focus-visible,
+.recorder:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The shortcut recorder looks like a key-cap field and lights up while armed. */
+.recorder {
+  min-width: 132px;
+  padding: 4px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  cursor: default;
+}
+
+.recorder--armed {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.recorder--invalid {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+/* NSSwitch-shaped toggle. */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  flex: none;
+}
+
+.switch input {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border: 1px solid var(--group-border);
+  cursor: default;
+  transition: background-color 140ms ease;
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  transition: transform 140ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.switch input:checked {
+  background: var(--accent);
+}
+
+.switch input:checked::after {
+  transform: translateX(16px);
+}
+
+/* ------------------------------------------------------------------- chips */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0 12px 10px;
+  list-style: none;
+}
+
+.chips:empty {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px 2px 8px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  font-size: 11.5px;
+}
+
+.chip button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: default;
+}
+
+.chip button:hover {
+  color: var(--destructive);
+}
+
+/* -------------------------------------------------------------------- dots */
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-tertiary);
+}
+
+.dot--ok {
+  background: #30d158;
+}
+
+.dot--missing {
+  background: var(--destructive);
+}
+
+/* ------------------------------------------------------------------ footer */
+
+.settings__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px 18px;
+}
+
+.settings__saved {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.settings__saved--error {
+  color: var(--destructive);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

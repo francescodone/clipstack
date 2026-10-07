@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClipStack</title>
+    <link rel="stylesheet" href="/src/styles/picker.css" />
+    <script type="module" src="/src/picker.ts" defer></script>
+  </head>
+  <body class="picker-body">
+    <div class="picker" data-test-id="picker">
+      <header class="picker__search">
+        <svg class="picker__search-icon" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.6" />
+          <path d="M13.6 13.6 17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <input
+          id="query"
+          class="picker__input"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          placeholder="Search the stack"
+          aria-label="Search copied items"
+        />
+        <span id="count" class="picker__count" aria-live="polite"></span>
+      </header>
+
+      <div class="picker__body">
+        <ul id="results" class="picker__results" role="listbox" aria-label="Copied items"></ul>
+        <section id="preview" class="picker__preview" aria-live="polite">
+          <p class="picker__preview-empty">Nothing selected</p>
+        </section>
+      </div>
+
+      <footer class="picker__footer">
+        <span class="picker__keys">
+          <kbd>↑</kbd><kbd>↓</kbd> move
+          <kbd>↵</kbd> paste
+          <kbd>⌘1</kbd>–<kbd>⌘9</kbd> paste by row
+          <kbd>⌘⌫</kbd> delete
+          <kbd>Esc</kbd> close
+        </span>
+        <span id="status" class="picker__status"></span>
+      </footer>
+    </div>
+  </body>
+</html>
