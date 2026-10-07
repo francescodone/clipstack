@@ -41,6 +41,7 @@ keyed by their hash; everything else lives in a SQLite database next to it.
 | **Cmd+Shift+V** | open the stack, search, pick what to paste |
 | ↑ ↓ / ↵ | move and paste |
 | Cmd+1…9 | paste the matching row directly |
+| Cmd+C | copy the selected item to the clipboard without pasting |
 | Cmd+P | pin an entry so it cannot be evicted |
 | Cmd+Backspace | delete an entry from the stack |
 | Esc | dismiss the picker |

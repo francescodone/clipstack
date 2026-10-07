@@ -57,6 +57,7 @@ pub fn run() {
             commands::search_clips,
             commands::get_clip,
             commands::paste_clip,
+            commands::copy_clip,
             commands::delete_clip,
             commands::pin_clip,
             commands::clear_stack,

@@ -10,6 +10,7 @@ export const api = {
     invoke<ClipSummary[]>("search_clips", { query, limit }),
   getClip: (id: number) => invoke<ClipDetail | null>("get_clip", { id }),
   pasteClip: (id: number) => invoke<void>("paste_clip", { id }),
+  copyClip: (id: number) => invoke<void>("copy_clip", { id }),
   deleteClip: (id: number) => invoke<void>("delete_clip", { id }),
   pinClip: (id: number, pinned: boolean) => invoke<void>("pin_clip", { id, pinned }),
   clearStack: () => invoke<void>("clear_stack"),

@@ -262,6 +262,45 @@ body {
   opacity: 0.75;
 }
 
+/* Copy-to-clipboard button: hidden until the row is hovered or selected,
+   the way Finder reveals row actions. */
+.row__copy {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -1px -2px 0 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  opacity: 0;
+  cursor: default;
+  transition: opacity 90ms ease, background-color 90ms ease;
+}
+
+.row__copy svg {
+  width: 13px;
+  height: 13px;
+}
+
+.row:hover .row__copy,
+.row[aria-selected="true"] .row__copy {
+  opacity: 0.85;
+}
+
+.row__copy:hover {
+  background: var(--kbd-bg);
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.row[aria-selected="true"] .row__copy:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
 /* ----------------------------------------------------------------- preview */
 
 .picker__preview {

@@ -99,6 +99,28 @@ function renderList(): void {
     meta.append(el("span", undefined, formatAgo(item.createdAt)));
     row.append(meta);
 
+    // Copy-only action: puts the item on the clipboard without pasting.
+    const copy = el("button", "row__copy");
+    copy.type = "button";
+    copy.title = "Copy to clipboard (⌘C)";
+    copy.setAttribute("aria-label", "Copy to clipboard");
+    const copyIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    copyIcon.setAttribute("viewBox", "0 0 14 14");
+    copyIcon.setAttribute("aria-hidden", "true");
+    const copyPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    copyPath.setAttribute("fill", "none");
+    copyPath.setAttribute("stroke", "currentColor");
+    copyPath.setAttribute("stroke-width", "1.4");
+    copyPath.setAttribute("stroke-linejoin", "round");
+    copyPath.setAttribute("d", "M5.2 5.2V2.6h6.2v6.2H8.8M2.6 5.2h6.2v6.2H2.6z");
+    copyIcon.append(copyPath);
+    copy.append(copyIcon);
+    copy.addEventListener("click", (event) => {
+      event.stopPropagation();
+      void copyToClipboard(index);
+    });
+    row.append(copy);
+
     resultsEl.append(row);
   });
 
@@ -267,6 +289,18 @@ async function paste(index: number): Promise<void> {
   }
 }
 
+async function copyToClipboard(index: number): Promise<void> {
+  const item = items[index];
+  if (!item) return;
+  try {
+    await api.copyClip(item.id);
+  } catch (error) {
+    setStatus(describe(error), "error");
+    return;
+  }
+  setStatus("Copied to the clipboard");
+}
+
 async function removeSelected(): Promise<void> {
   const item = items[selected];
   if (!item) return;
@@ -313,6 +347,16 @@ function onKeyDown(event: KeyboardEvent): void {
     if (event.key === "Backspace") {
       event.preventDefault();
       void removeSelected();
+      return;
+    }
+    if (event.key.toLowerCase() === "c") {
+      // Cmd+C with a selection inside the search field copies that text;
+      // anywhere else it copies the selected stack item to the clipboard.
+      if (document.activeElement === queryEl && queryEl.selectionStart !== queryEl.selectionEnd) {
+        return;
+      }
+      event.preventDefault();
+      void copyToClipboard(selected);
       return;
     }
     if (event.key.toLowerCase() === "p") {
@@ -372,8 +416,9 @@ async function reset(): Promise<void> {
   queryEl.value = "";
   busy = false;
   await Promise.all([refreshCount(), load("")]);
+  // Focus without selecting: an empty field keeps Cmd+C aimed at the stack
+  // item rather than at selected placeholder text.
   queryEl.focus();
-  queryEl.select();
 }
 
 async function main(): Promise<void> {
