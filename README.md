@@ -119,6 +119,16 @@ Maintainers: releases are published from GitHub Releases. A release must ship
 `npm run tauri build` when the updater key is available) and a `latest.json`
 manifest describing them. See `scripts/release.sh`.
 
+To tag a release by hand instead of using the script:
+
+```sh
+git tag v0.3.0
+git push origin v0.3.0
+```
+
+(The script does this as part of `gh release create`; the tag is what marks
+the release point in history.)
+
 ## Troubleshooting
 
 ### "could not verify “ClipStack” is free of malware that may harm your Mac or compromise your privacy"
