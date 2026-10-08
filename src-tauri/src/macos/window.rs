@@ -41,6 +41,15 @@ pub fn configure_panel(window: &WebviewWindow) -> Result<(), String> {
     );
     // Without this the panel vanishes the instant we activate it.
     ns.setHidesOnDeactivate(false);
+    // An undecorated window has no title bar, so AppKit treats the whole
+    // content area as a drag surface: pressing and holding anywhere on the
+    // panel — the preview pane, or the gaps between rows — starts a window
+    // drag. macOS then renders the panel as a translucent drag image and the
+    // live backdrop blur stops sampling what is behind it, so the frosted
+    // panel collapses to its flat fill and reads as a sudden transparency
+    // bug. A Spotlight-style palette is never dragged by its content, and the
+    // panel is positioned in code anyway, so pin it in place.
+    ns.setMovable(false);
     ns.setLevel(LEVEL_HIDDEN);
     Ok(())
 }

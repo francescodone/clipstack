@@ -169,46 +169,9 @@ function renderList(): void {
     text.append(el("span", "row__sub", subtitleFor(item)));
     main.append(text);
 
-    // Bottom line: the copy actions, anchored right and always visible
-    // whatever the length of the content above.
-    const actions = el("div", "row__actions");
-
-    // Copy-only action: puts the item on the clipboard without pasting. On a
-    // formatted text row this is the rich variant, marked with sparkles.
-    const rich = item.kind === "text" && item.hasFormatting;
-    const copy = el("button", "row__copy");
-    copy.type = "button";
-    copy.title = rich
-      ? "Copy as it was copied, formatting included (⌘C)"
-      : "Copy to clipboard (⌘C)";
-    copy.setAttribute("aria-label", "Copy to clipboard");
-    copy.append(copyIcon(rich));
-    copy.addEventListener("click", (event) => {
-      event.stopPropagation();
-      void copyToClipboard(index, "rich", copy);
-    });
-    actions.append(copy);
-
-    // Second command for text that captured formatting: the same payload
-    // stripped to the plain string (drops colour, fonts, inline images). Same
-    // copy glyph, undecorated, so the pair reads as one action with two
-    // outcomes rather than two unrelated buttons.
-    if (rich) {
-      const plain = el("button", "row__copy row__copy--plain");
-      plain.type = "button";
-      plain.title = item.hasInlineImage
-        ? "Copy as plain text — drops the formatting and inline image (⌘⇧C)"
-        : "Copy as plain text — drops the formatting (⌘⇧C)";
-      plain.setAttribute("aria-label", "Copy as plain text");
-      plain.append(copyIcon(false));
-      plain.addEventListener("click", (event) => {
-        event.stopPropagation();
-        void copyToClipboard(index, "plain", plain);
-      });
-      actions.append(plain);
-    }
-
-    // Age/pin meta stays on the top line's right edge, above the actions.
+    // Age/pin meta on the row's right edge. The copy actions live in the
+    // preview header, beside the source app's name — one labelled place to
+    // copy from rather than a per-row icon.
     const meta = el("span", "row__meta");
     if (item.pinned) {
       const pin = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -225,7 +188,6 @@ function renderList(): void {
     main.append(meta);
 
     row.append(main);
-    row.append(actions);
 
     resultsEl.append(row);
   });
@@ -250,16 +212,76 @@ function setSelected(index: number): void {
 
 // ------------------------------------------------------------------ preview
 
+/**
+ * The preview header's copy buttons, kept as module state so the keyboard
+ * shortcuts (⌘C / ⌘⇧C, which have no clicked button) can flash the same
+ * confirmation pulse on them. Reset on every preview render.
+ */
+let previewCopyBtn: HTMLButtonElement | null = null;
+let previewPlainBtn: HTMLButtonElement | null = null;
+
+/**
+ * One labelled copy action for the preview header: the shared copy glyph
+ * plus a word, so the two outcomes (as-copied vs plain) are unmistakable
+ * without hovering for a tooltip.
+ */
+function makePreviewCopyButton(
+  index: number,
+  format: "plain" | "rich",
+  item: ClipSummary,
+): HTMLButtonElement {
+  const rich = item.kind === "text" && item.hasFormatting;
+  const button = el("button", format === "plain" ? "preview__action preview__action--plain" : "preview__action");
+  button.type = "button";
+  if (format === "plain") {
+    button.title = item.hasInlineImage
+      ? "Copy as plain text — drops the formatting and inline image (⌘⇧C)"
+      : "Copy as plain text — drops the formatting (⌘⇧C)";
+    button.setAttribute("aria-label", "Copy as plain text");
+  } else {
+    button.title = rich
+      ? "Copy as it was copied, formatting included (⌘C)"
+      : "Copy to clipboard (⌘C)";
+    button.setAttribute("aria-label", "Copy to clipboard");
+  }
+  // The sparkle marks the as-copied variant only when there is formatting
+  // to keep; the plain variant always carries the bare glyph.
+  button.append(copyIcon(format === "rich" && rich));
+  button.append(el("span", undefined, format === "plain" ? "Plain" : "Copy"));
+  button.addEventListener("click", () => {
+    void copyToClipboard(index, format, button);
+  });
+  return button;
+}
+
 async function showPreview(item: ClipSummary | undefined): Promise<void> {
   const token = ++previewToken;
   previewEl.replaceChildren();
+  previewCopyBtn = null;
+  previewPlainBtn = null;
 
   if (!item) {
     previewEl.append(el("p", "picker__preview-empty", "Nothing selected"));
     return;
   }
 
-  previewEl.append(el("h2", "preview__heading", item.sourceApp ?? labelForKind(item.kind)));
+  // Header: the source app on the left, the copy actions on the right. The
+  // actions belong to the selected item, which is exactly what this pane
+  // shows, so one pair of buttons serves the whole panel.
+  const head = el("div", "preview__head");
+  head.append(el("h2", "preview__heading", item.sourceApp ?? labelForKind(item.kind)));
+  const headActions = el("div", "preview__actions");
+  const index = items.indexOf(item);
+  previewCopyBtn = makePreviewCopyButton(index, "rich", item);
+  headActions.append(previewCopyBtn);
+  // Second command for text that captured formatting: the same payload
+  // stripped to the plain string (drops colour, fonts, inline images).
+  if (item.kind === "text" && item.hasFormatting) {
+    previewPlainBtn = makePreviewCopyButton(index, "plain", item);
+    headActions.append(previewPlainBtn);
+  }
+  head.append(headActions);
+  previewEl.append(head);
 
   let detail: ClipDetail | null;
   try {
@@ -403,9 +425,9 @@ async function paste(index: number): Promise<void> {
  * play again on repeat clicks instead of silently no-op'ing.
  */
 function flashButton(button: HTMLElement): void {
-  button.classList.remove("row__copy--flash");
+  button.classList.remove("preview__action--flash");
   void button.offsetWidth;
-  button.classList.add("row__copy--flash");
+  button.classList.add("preview__action--flash");
 }
 
 async function copyToClipboard(
@@ -422,12 +444,10 @@ async function copyToClipboard(
     return;
   }
   // Only on success: a blink on a failed copy would be a lie. The keyboard
-  // path has no clicked button, so it flashes the row's primary copy action.
-  const button =
-    source ??
-    resultsEl.querySelector<HTMLElement>(
-      `[data-index="${index}"] .row__copy${format === "plain" ? "--plain" : ""}`,
-    );
+  // path has no clicked button, so it flashes the preview header's matching
+  // action — if it is still on screen.
+  const fallback = format === "plain" ? previewPlainBtn : previewCopyBtn;
+  const button = source ?? (fallback?.isConnected ? fallback : undefined);
   if (button) flashButton(button);
   setStatus(format === "plain" ? "Copied as plain text" : "Copied to the clipboard");
 }
@@ -540,6 +560,13 @@ resultsEl.addEventListener("click", (event) => {
 });
 
 queryEl.addEventListener("input", scheduleLoad);
+
+// Press-and-hold must never start a WebKit drag session — an image ghost or a
+// text drag. While one is live the panel's backdrop blur stops compositing and
+// it flashes semi-transparent, the same failure a window drag causes. Blocking
+// `dragstart` covers every draggable thing in the panel, including the preview
+// image, without having to mark each one.
+window.addEventListener("dragstart", (event) => event.preventDefault());
 
 window.addEventListener("keydown", onKeyDown);
 

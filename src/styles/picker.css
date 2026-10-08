@@ -275,100 +275,9 @@ body {
   opacity: 0.75;
 }
 
-/* Copy-to-clipboard buttons: anchored to the row's bottom-right, always
-   rendered whatever the length of the content above, so their position is
-   stable and they never hide a long preview behind a hover-reveal. */
-.row__actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 2px;
-  min-height: 20px;
-  margin-top: -1px;
-}
-
-.row__copy {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 20px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-tertiary);
-  opacity: 0.85;
-  cursor: default;
-  transition: background-color 90ms ease;
-}
-
-.row__copy svg {
-  width: 13px;
-  height: 13px;
-  display: block;
-}
-
-/* Both row actions share the two-sheet copy glyph; the rich one carries
-   sparkles and the plain one stays bare, so the pair reads as one action with
-   two outcomes. The plain one sits a step dimmer than its sparkle twin. */
-.row__copy--plain {
-  opacity: 0.6;
-}
-
-.row__copy:hover {
-  background: var(--kbd-bg);
-  color: var(--text-primary);
-  opacity: 1;
-}
-
-/* The selected row is an accent block, so its always-visible buttons switch
-   to white to stay legible on it. */
-.row[aria-selected="true"] .row__copy {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.row[aria-selected="true"] .row__copy--plain {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.row[aria-selected="true"] .row__copy:hover {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-}
-
-/* Copy confirmed: an orange pulse on the button that was clicked, using the
-   app's accent. Animates box-shadow and colour only — never opacity, which
-   is load-bearing for the plain/rich pair — so it plays cleanly whatever
-   the row's state.
-   Class-based rather than :active, which would end before the IPC round
-   trip resolves. */
-@keyframes copy-flash {
-  0% {
-    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.55);
-    color: var(--accent);
-  }
-  100% {
-    box-shadow: 0 0 0 7px rgba(194, 65, 12, 0);
-    color: var(--text-tertiary);
-  }
-}
-
-.row__copy--flash {
-  animation: copy-flash 500ms ease-out;
-}
-
-@media (prefers-color-scheme: dark) {
-  @keyframes copy-flash {
-    0% {
-      box-shadow: 0 0 0 0 rgba(221, 91, 22, 0.55);
-      color: var(--accent);
-    }
-    100% {
-      box-shadow: 0 0 0 7px rgba(221, 91, 22, 0);
-      color: var(--text-tertiary);
-    }
-  }
-}
+/* The copy actions live in the preview header, not the rows: one labelled
+   pair beside the source app's name serves the selected item, which is what
+   the pane shows. */
 
 /* ----------------------------------------------------------------- preview */
 
@@ -392,13 +301,110 @@ body {
   margin: 8px 0;
 }
 
+/* Preview header: the source app on the left, the copy actions on the right.
+   Deliberately not sticky — a nested backdrop-filter inside the already
+   blurred panel is exactly the compositing situation that misbehaves. */
+.preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -14px -14px 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.preview__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Labelled copy pill: the shared copy glyph plus a word, so the two outcomes
+   (as-copied vs plain) read without hovering for a tooltip. */
+.preview__action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--kbd-bg);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: default;
+  transition: background-color 90ms ease, color 90ms ease;
+}
+
+.preview__action svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+/* The plain variant sits a step dimmer than its sparkle twin, keeping the
+   hierarchy the old row pair had. */
+.preview__action--plain {
+  opacity: 0.75;
+}
+
+.preview__action:hover {
+  background: var(--row-selected);
+  color: var(--text);
+  opacity: 1;
+}
+
+/* Copy confirmed: an orange pulse on the button that was clicked, using the
+   app's accent. Animates box-shadow and colour only — never opacity, which
+   is load-bearing for the plain/rich pair — so it plays cleanly whatever
+   the button's state.
+   Class-based rather than :active, which would end before the IPC round
+   trip resolves. */
+@keyframes copy-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.55);
+    color: var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgba(194, 65, 12, 0);
+    color: var(--text-secondary);
+  }
+}
+
+.preview__action--flash {
+  animation: copy-flash 500ms ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  @keyframes copy-flash {
+    0% {
+      box-shadow: 0 0 0 0 rgba(221, 91, 22, 0.55);
+      color: var(--accent);
+    }
+    100% {
+      box-shadow: 0 0 0 7px rgba(221, 91, 22, 0);
+      color: var(--text-secondary);
+    }
+  }
+}
+
 .preview__heading {
-  margin: 0 0 8px;
+  margin: 0;
+  min-width: 0;
   font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .preview__text {
@@ -415,6 +421,10 @@ body {
   border-radius: 6px;
   border: 1px solid var(--hairline);
   display: block;
+  /* Images are natively draggable; a drag ghost here kills the panel blur. */
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .preview__files {
